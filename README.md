@@ -8,7 +8,21 @@ A FastAPI app demonstrating LangChain's agent framework. The agent can:
 - **Calculate** math expressions
 - **Maintain conversation context** across messages
 
-Built with LangChain + LangGraph + Anthropic Claude, deployed on Render.
+Built with LangChain + LangGraph + Anthropic Claude, running on [Render](https://render.com/).
+
+## Deploy
+
+Click the **Deploy to Render** button above. You'll be prompted to set your `ANTHROPIC_API_KEY`, then click **Apply**. That's it.
+
+Don't have a Render account? [Sign up here](https://render.com/register).
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | — | Your Anthropic API key |
+| `ANTHROPIC_MODEL` | No | `claude-sonnet-4-20250514` | Model to use |
+| `AGENT_TEMPERATURE` | No | `0.3` | LLM temperature |
 
 ## Architecture
 
@@ -34,34 +48,6 @@ A direct API call can't decide on its own to search Wikipedia, read the result, 
 ├── requirements.txt  # Python dependencies
 └── .env.example      # Environment variable reference
 ```
-
-## Environment Variables
-
-| Variable | Required | Default | Description |
-|---|---|---|---|
-| `ANTHROPIC_API_KEY` | Yes | — | Your Anthropic API key |
-| `ANTHROPIC_MODEL` | No | `claude-sonnet-4-20250514` | Model to use |
-| `AGENT_TEMPERATURE` | No | `0.3` | LLM temperature |
-
-## Deploying to Render
-
-Click the **Deploy to Render** button above, or:
-
-1. Fork/push this repo to GitHub
-2. Go to https://dashboard.render.com/blueprint/new
-3. Connect your repo
-4. Set `ANTHROPIC_API_KEY` when prompted
-5. Click **Apply**
-
-## Local Development
-
-```bash
-pip install -r requirements.txt
-export ANTHROPIC_API_KEY="sk-ant-..."
-uvicorn main:app --reload --port 8000
-```
-
-Open http://localhost:8000 in your browser.
 
 ## API
 
