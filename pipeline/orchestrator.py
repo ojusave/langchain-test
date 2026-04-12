@@ -1,4 +1,16 @@
-"""Pipeline orchestrator: starts the research task and streams status via SSE."""
+"""
+Pipeline orchestrator: starts the research workflow task and streams SSE.
+
+This is the bridge between the stateless web service and the durable
+workflow service. It:
+  1. Triggers the `research` orchestrator task via the Render SDK
+  2. Awaits its completion (the SDK handles polling)
+  3. Streams status updates as Server-Sent Events (SSE)
+
+The orchestrator itself does no research work. All compute happens in
+the workflow service on isolated instances with their own retry/timeout
+config.
+"""
 
 import json
 import os

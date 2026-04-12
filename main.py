@@ -1,4 +1,16 @@
-"""FastAPI web service: routes, static files, and the /research SSE endpoint."""
+"""
+FastAPI web service: the HTTP layer for the research agent.
+
+This file is intentionally thin. It handles:
+  - CORS middleware (so the browser UI can call the API)
+  - The /research POST endpoint (delegates to the pipeline orchestrator)
+  - The /health GET endpoint (for Render health checks)
+  - Static file serving (the browser UI)
+
+All research logic lives in the `tasks/` package and runs on the
+workflow service. This web service only triggers workflows and streams
+their results.
+"""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

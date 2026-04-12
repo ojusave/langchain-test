@@ -1,13 +1,30 @@
-"""Synthesize task: merges all analyses into a structured report with title, sections, and sources."""
+"""
+Synthesize task: merges all analyses into a structured report.
 
-from render_sdk import Workflows
+Workflow config rationale:
+  - plan: standard (1 CPU, 2 GB) — the heaviest Claude call; the prompt
+    contains every analysis (findings + key points + sources) concatenated
+    together. Token count scales with the number of search queries.
+  - timeout: 90s — synthesis over 3-5 analyses with full context can take
+    30-40s from Claude; 90s covers worst-case latency.
+  - retry: 1 retry, 3s wait — the input is deterministic (all analyses are
+    already computed), so a retry will produce the same result. One retry
+    handles a transient Claude error without wasting compute on repeated
+    failures.
+"""
+
+from render_sdk import Workflows, Retry
 
 from .llm import ask, parse_json
 
 app = Workflows()
 
 
-@app.task
+@app.task(
+    plan="standard",
+    timeout_seconds=90,
+    retry=Retry(max_retries=1, wait_duration_ms=3000, backoff_scaling=1),
+)
 def synthesize(question: str, analyses: list) -> dict:
     """Merge all analyses into a structured research report."""
     parts = []

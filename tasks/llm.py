@@ -1,4 +1,15 @@
-"""Shared Claude helpers: LLM instantiation, prompt execution, and JSON response parsing."""
+"""
+Shared Claude helpers: LLM instantiation, prompt execution, and JSON parsing.
+
+Used by plan, analyze, and synthesize tasks. The LLM is configured via
+environment variables (ANTHROPIC_MODEL, AGENT_TEMPERATURE) so the same
+code works across environments without code changes.
+
+The parse_json helper is deliberately lenient: Claude sometimes wraps JSON
+in markdown code fences or adds preamble text. The fallback extraction
+finds the first {...} block, which is good enough for structured output
+without forcing function-calling mode.
+"""
 
 import json
 import os

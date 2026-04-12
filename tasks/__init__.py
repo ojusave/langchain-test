@@ -1,6 +1,17 @@
-"""Tasks package: combines all workflow task apps into a single Workflows entry point."""
+"""
+Tasks package: combines all workflow task apps into a single Workflows entry point.
 
-from render_sdk import Workflows, Retry
+Each task module (plan, search, analyze, synthesize, research) defines its own
+Workflows app with per-task compute plans, timeouts, and retry strategies.
+This file merges them into a single app that the `python -m tasks` entry point
+starts.
+
+No default_retry/default_timeout/default_plan is set here because every task
+explicitly configures its own. This makes the config visible and intentional
+rather than hidden behind a default.
+"""
+
+from render_sdk import Workflows
 
 from .plan import app as plan_app
 from .search import app as search_app
@@ -14,9 +25,6 @@ app = Workflows.from_workflows(
     search_app,
     analyze_app,
     synthesize_app,
-    default_retry=Retry(max_retries=2, wait_duration_ms=1000, backoff_scaling=1.5),
-    default_timeout=120,
-    default_plan="starter",
 )
 
 __all__ = ["app"]
