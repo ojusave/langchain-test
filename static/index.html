@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LangChain Chat</title>
+  <title>Research Agent</title>
   <link rel="icon" href="https://render.com/favicon.ico" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,6 +20,8 @@
       --text: #e4e4e7;
       --text-muted: #71717a;
       --text-dim: #52525b;
+      --green: #22c55e;
+      --red: #ef4444;
     }
 
     body {
@@ -31,15 +33,10 @@
       flex-direction: column;
     }
 
-    h1, h2, h3 {
-      font-family: 'Roboto', -apple-system, sans-serif;
-      font-weight: 300;
-    }
-
+    h1, h2, h3 { font-family: 'Roboto', -apple-system, sans-serif; font-weight: 300; }
     a { color: var(--render-purple); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
-    /* Header */
     header {
       padding: 0.625rem 1.25rem;
       border-bottom: 1px solid var(--border);
@@ -52,225 +49,234 @@
       z-index: 10;
     }
 
-    header .title-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    header .title-group { display: flex; align-items: center; gap: 0.5rem; }
 
     header .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #22c55e;
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green);
       box-shadow: 0 0 8px rgba(34,197,94,0.4);
       flex-shrink: 0;
     }
 
     header h1 {
-      font-size: 0.875rem;
-      font-weight: 600;
+      font-size: 0.875rem; font-weight: 600;
       font-family: 'Inter', sans-serif;
-      color: #fafafa;
-      letter-spacing: -0.01em;
+      color: #fafafa; letter-spacing: -0.01em;
     }
 
     header .tag {
-      font-size: 0.6rem;
-      padding: 0.125rem 0.4rem;
-      background: rgba(255,255,255,0.06);
-      color: var(--text-muted);
-      font-weight: 500;
-      letter-spacing: 0.02em;
-      text-transform: uppercase;
+      font-size: 0.6rem; padding: 0.125rem 0.4rem;
+      background: rgba(255,255,255,0.06); color: var(--text-muted);
+      font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase;
       border: 1px solid var(--border);
     }
 
-    header .actions {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
+    header .actions { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
 
     .header-btn {
-      font-size: 0.725rem;
-      font-weight: 500;
-      padding: 0.3rem 0.6rem;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.15s;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
+      font-size: 0.725rem; font-weight: 500; padding: 0.3rem 0.6rem;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+      text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;
       font-family: 'Inter', sans-serif;
     }
+    .header-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); text-decoration: none; }
+    .header-btn.primary { background: var(--render-purple); border-color: var(--render-purple); color: #fff; }
+    .header-btn.primary:hover { background: var(--render-purple-hover); }
+    .header-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
 
-    .header-btn:hover {
-      background: rgba(255,255,255,0.04);
-      color: var(--text);
-      text-decoration: none;
-    }
-
-    .header-btn.primary {
-      background: var(--render-purple);
-      border-color: var(--render-purple);
-      color: #fff;
-    }
-
-    .header-btn.primary:hover {
-      background: var(--render-purple-hover);
-    }
-
-    .header-btn svg {
-      width: 12px;
-      height: 12px;
-      flex-shrink: 0;
-    }
-
-    /* Chat */
-    #chat {
+    #main {
       flex: 1;
       overflow-y: auto;
-      padding: 1.5rem 1rem;
+      padding: 2rem 1.25rem;
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      align-items: center;
     }
 
-    .msg-group {
-      display: flex;
-      flex-direction: column;
-      gap: 0.125rem;
-      max-width: min(75%, 560px);
-      animation: fadeUp 0.2s ease-out;
-    }
-
-    .msg-group.user { align-self: flex-end; }
-    .msg-group.assistant { align-self: flex-start; }
-
-    .msg-label {
-      font-size: 0.65rem;
-      font-weight: 500;
-      color: var(--text-dim);
-      padding: 0 0.25rem;
-      margin-bottom: 0.125rem;
-      margin-top: 0.75rem;
-    }
-
-    .msg-group.user .msg-label { text-align: right; }
-
-    .msg {
-      padding: 0.625rem 0.875rem;
-      line-height: 1.55;
-      font-size: 0.875rem;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
-      border: 1px solid var(--border);
-    }
-
-    .msg.user {
-      background: var(--render-purple);
-      border-color: var(--render-purple);
-      color: #fff;
-    }
-
-    .msg.assistant {
-      background: var(--surface);
-    }
-
-    .msg.assistant.thinking { color: var(--text-dim); }
-
-    .msg.assistant.thinking::after {
-      content: "";
-      display: inline-block;
-      width: 4px;
-      height: 14px;
-      background: var(--text-dim);
-      margin-left: 2px;
-      vertical-align: text-bottom;
-      animation: blink 0.8s step-end infinite;
-    }
-
-    .msg.assistant strong { color: #fafafa; font-weight: 600; }
-    .msg.assistant p { margin: 0.35rem 0; }
-    .msg.assistant p:first-child { margin-top: 0; }
-    .msg.assistant p:last-child { margin-bottom: 0; }
-
-    .msg.assistant ul, .msg.assistant ol {
-      margin: 0.35rem 0;
-      padding-left: 1.25rem;
-    }
-
-    .msg.assistant li { margin: 0.15rem 0; }
-
-    .msg.assistant code {
-      background: rgba(255,255,255,0.08);
-      padding: 0.1rem 0.35rem;
-      font-size: 0.8rem;
-      font-family: "SF Mono", "Fira Code", monospace;
-    }
-
-    .msg.assistant pre {
-      background: rgba(0,0,0,0.4);
-      border: 1px solid var(--border);
-      padding: 0.625rem 0.75rem;
-      margin: 0.5rem 0;
-      overflow-x: auto;
-      font-size: 0.8rem;
-    }
-
-    .msg.assistant pre code { background: none; padding: 0; }
-
-    /* Welcome */
     .welcome {
-      align-self: center;
       text-align: center;
       color: var(--text-dim);
       margin: auto;
       padding: 2rem;
+      max-width: 560px;
+    }
+    .welcome h2 { font-size: 1.25rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .welcome p { font-size: 0.8rem; line-height: 1.65; }
+    .welcome .examples {
+      display: flex; flex-wrap: wrap; gap: 0.375rem;
+      justify-content: center; margin-top: 1rem;
+    }
+    .welcome .examples button {
+      padding: 0.4rem 0.75rem; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); color: #a1a1aa;
+      font-size: 0.75rem; font-family: 'Inter', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .welcome .examples button:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(255,255,255,0.12); color: var(--text);
     }
 
-    .welcome h2 {
-      font-size: 1.25rem;
+    /* Loading state */
+    #loading {
+      display: none;
+      text-align: center;
+      margin: auto;
+      padding: 3rem 2rem;
+      max-width: 480px;
+    }
+
+    .loader {
+      width: 48px; height: 48px;
+      margin: 0 auto 1.5rem;
+      border: 3px solid var(--border);
+      border-top-color: var(--render-purple);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    #loading h2 {
+      font-size: 1rem;
       color: var(--text-muted);
       margin-bottom: 0.5rem;
-    }
-
-    .welcome p {
-      font-size: 0.8rem;
-      line-height: 1.65;
-    }
-
-    .welcome .examples {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.375rem;
-      justify-content: center;
-      margin-top: 1rem;
-    }
-
-    .welcome .examples button {
-      padding: 0.4rem 0.75rem;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border);
-      color: #a1a1aa;
-      font-size: 0.75rem;
       font-family: 'Inter', sans-serif;
-      cursor: pointer;
+      font-weight: 500;
+    }
+
+    #loading .loading-detail {
+      font-size: 0.775rem;
+      color: var(--text-dim);
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+    }
+
+    #loading .dashboard-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--render-purple);
+      padding: 0.4rem 0.75rem;
+      border: 1px solid rgba(108,99,255,0.25);
+      background: rgba(108,99,255,0.06);
       transition: all 0.15s;
     }
 
-    .welcome .examples button:hover {
-      background: rgba(255,255,255,0.08);
-      border-color: rgba(255,255,255,0.12);
+    #loading .dashboard-link:hover {
+      background: rgba(108,99,255,0.12);
+      border-color: rgba(108,99,255,0.4);
+      text-decoration: none;
+    }
+
+    #loading .dashboard-link svg { width: 13px; height: 13px; }
+
+    #loading .error-msg {
+      color: var(--red);
+      font-size: 0.8rem;
+      margin-top: 1rem;
+    }
+
+    /* Report */
+    #report {
+      display: none;
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      animation: fadeUp 0.3s ease-out;
+    }
+
+    #report h2 {
+      font-size: 1.3rem;
+      color: #fafafa;
+      margin-bottom: 0.75rem;
+      font-weight: 400;
+    }
+
+    #report .report-summary {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--text-muted);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    #report .report-section { margin-bottom: 1.25rem; }
+
+    #report .report-section h3 {
+      font-size: 1rem;
+      color: #e4e4e7;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 0.5rem;
+    }
+
+    #report .report-section .content {
+      font-size: 0.85rem;
+      line-height: 1.7;
       color: var(--text);
     }
 
-    /* Input */
+    #report .report-section .content p { margin: 0.4rem 0; }
+    #report .report-section .content p:first-child { margin-top: 0; }
+    #report .report-section .content ul, #report .report-section .content ol {
+      margin: 0.4rem 0; padding-left: 1.25rem;
+    }
+    #report .report-section .content li { margin: 0.15rem 0; }
+    #report .report-section .content strong { color: #fafafa; font-weight: 600; }
+    #report .report-section .content code {
+      background: rgba(255,255,255,0.08);
+      padding: 0.1rem 0.35rem; font-size: 0.8rem;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+    #report .report-section .content pre {
+      background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      padding: 0.625rem 0.75rem; margin: 0.5rem 0;
+      overflow-x: auto; font-size: 0.8rem;
+    }
+    #report .report-section .content pre code { background: none; padding: 0; }
+
+    #report .report-sources {
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    #report .report-sources h3 {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+    }
+
+    #report .report-sources ul { list-style: none; padding: 0; }
+
+    #report .report-sources li {
+      font-size: 0.8rem;
+      padding: 0.35rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    #report .report-sources li:last-child { border-bottom: none; }
+    #report .report-sources a { font-weight: 500; }
+
+    #report .report-sources .source-url {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      display: block;
+      margin-top: 0.1rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
     form {
       padding: 0.75rem 1rem 1rem;
       border-top: 1px solid var(--border);
@@ -290,7 +296,6 @@
       outline: none;
       transition: border-color 0.15s;
     }
-
     input:focus { border-color: var(--render-purple); }
     input::placeholder { color: #3f3f46; }
 
@@ -299,58 +304,46 @@
       background: var(--render-purple);
       color: #fff;
       border: 1px solid var(--render-purple);
-      font-size: 0.85rem;
-      font-weight: 500;
+      font-size: 0.85rem; font-weight: 500;
       font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 0.375rem;
+      cursor: pointer; transition: all 0.15s;
+      display: flex; align-items: center; gap: 0.375rem;
     }
-
     button[type="submit"]:hover { background: var(--render-purple-hover); }
     button[type="submit"]:disabled { opacity: 0.4; cursor: not-allowed; }
-
     button[type="submit"] svg { width: 14px; height: 14px; }
 
-    /* Footer */
     footer {
       padding: 0.5rem 1.25rem;
       border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.375rem;
-      font-size: 0.675rem;
-      color: var(--text-dim);
-      background: var(--bg);
+      display: flex; align-items: center; justify-content: center; gap: 0.375rem;
+      font-size: 0.675rem; color: var(--text-dim); background: var(--bg);
     }
-
     footer a { color: var(--text-muted); }
     footer a:hover { color: var(--text); }
     footer .sep { color: #27272a; }
 
-    /* Scrollbar */
-    #chat::-webkit-scrollbar { width: 4px; }
-    #chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
-    #chat::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+    #main::-webkit-scrollbar { width: 4px; }
+    #main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+    #main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes blink { 50% { opacity: 0; } }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
 
     @media (max-width: 600px) {
-      .msg-group { max-width: 88%; }
-      #chat { padding: 1rem 0.75rem; }
+      #main { padding: 1.5rem 0.75rem; }
       form { padding: 0.625rem 0.75rem 0.875rem; }
       header { flex-wrap: wrap; gap: 0.5rem; }
       header .actions { gap: 0.375rem; }
       .header-btn { font-size: 0.65rem; padding: 0.25rem 0.5rem; }
       .header-btn .btn-label { display: none; }
+      #report { padding: 1.25rem; }
     }
   </style>
 </head>
@@ -358,8 +351,8 @@
   <header>
     <div class="title-group">
       <div class="dot"></div>
-      <h1>LangChain Chat</h1>
-      <span class="tag">Claude Sonnet + Tools</span>
+      <h1>Research Agent</h1>
+      <span class="tag">Render Workflows + Exa + Claude</span>
     </div>
     <div class="actions">
       <a href="https://github.com/ojusave/langchain-test" target="_blank" rel="noopener" class="header-btn">
@@ -376,31 +369,44 @@
     </div>
   </header>
 
-  <div id="chat">
-    <div class="welcome">
-      <h2>Ask me anything</h2>
-      <p>I can search the web and do math.</p>
+  <div id="main">
+    <div class="welcome" id="welcome">
+      <h2>Research anything</h2>
+      <p>Ask a question. The agent plans search queries, fans out parallel web searches via Exa, analyzes each result set with Claude, and synthesizes a report: all as chained <a href="https://render.com/workflows" target="_blank" rel="noopener">Render Workflow</a> tasks.</p>
       <div class="examples">
-        <button type="button" onclick="sendExample(this)">What is the population of Tokyo?</button>
-        <button type="button" onclick="sendExample(this)">Latest news on AI agents</button>
-        <button type="button" onclick="sendExample(this)">What's 1729^2?</button>
+        <button type="button" onclick="sendExample(this)">What are the latest advances in quantum computing?</button>
+        <button type="button" onclick="sendExample(this)">How does mRNA vaccine technology work?</button>
+        <button type="button" onclick="sendExample(this)">What is the state of fusion energy in 2025?</button>
       </div>
     </div>
+
+    <div id="loading">
+      <div class="loader"></div>
+      <h2 id="loading-msg">Researching...</h2>
+      <p class="loading-detail">The orchestrator task is chaining subtasks: plan, parallel searches, parallel analyses, and synthesis. Each runs on its own compute with automatic retries.</p>
+      <a href="https://dashboard.render.com/" target="_blank" rel="noopener" class="dashboard-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Watch the task tree in the Render Dashboard
+      </a>
+      <div class="error-msg" id="error-msg"></div>
+    </div>
+
+    <div id="report"></div>
   </div>
 
   <form id="form">
-    <input id="input" type="text" placeholder="Type a message..." autocomplete="off" />
+    <input id="input" type="text" placeholder="What do you want to research?" autocomplete="off" />
     <button type="submit">
-      Send
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Research
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     </button>
   </form>
 
   <footer>
-    <span>Built with LangChain + Claude</span>
-    <span class="sep">·</span>
+    <span>Built with LangChain + Claude + Exa</span>
+    <span class="sep">&middot;</span>
     <a href="https://render.com/" target="_blank" rel="noopener">Powered by Render</a>
-    <span class="sep">·</span>
+    <span class="sep">&middot;</span>
     <a href="https://github.com/ojusave/langchain-test" target="_blank" rel="noopener">Source</a>
   </footer>
 
@@ -417,17 +423,17 @@
       return `https://render.com/register?${params.toString()}`;
     }
 
-    function deployToRenderUrl() {
-      return `https://render.com/deploy?repo=${encodeURIComponent(GITHUB_REPO)}`;
-    }
-
     document.getElementById("signup-btn").href = renderSignupUrlWithUtms("navbar_button");
-    document.getElementById("deploy-btn").href = deployToRenderUrl();
+    document.getElementById("deploy-btn").href = `https://render.com/deploy?repo=${encodeURIComponent(GITHUB_REPO)}`;
 
-    const chat = document.getElementById("chat");
     const form = document.getElementById("form");
     const input = document.getElementById("input");
-    let history = [];
+    const mainEl = document.getElementById("main");
+    const welcome = document.getElementById("welcome");
+    const loading = document.getElementById("loading");
+    const loadingMsg = document.getElementById("loading-msg");
+    const errorMsg = document.getElementById("error-msg");
+    const report = document.getElementById("report");
 
     function renderMarkdown(text) {
       let html = text
@@ -467,45 +473,49 @@
         }
       }
       if (inList) blocks.push(`<ul>${listBuffer.join("")}</ul>`);
-
       return blocks.join("");
     }
 
-    function addMessage(role, content, cls = "") {
-      const welcome = chat.querySelector(".welcome");
-      if (welcome) welcome.remove();
-
-      const group = document.createElement("div");
-      group.className = `msg-group ${role}`;
-
-      const label = document.createElement("div");
-      label.className = "msg-label";
-      label.textContent = role === "user" ? "You" : "Assistant";
-      group.appendChild(label);
-
+    function escapeHtml(text) {
       const div = document.createElement("div");
-      div.className = `msg ${role} ${cls}`.trim();
+      div.textContent = text;
+      return div.innerHTML;
+    }
 
-      if (role === "assistant" && !cls.includes("thinking")) {
-        div.innerHTML = renderMarkdown(content);
-      } else {
-        div.textContent = content;
+    function renderReport(data) {
+      let html = "";
+      if (data.title) html += `<h2>${escapeHtml(data.title)}</h2>`;
+      if (data.summary) html += `<div class="report-summary">${escapeHtml(data.summary)}</div>`;
+
+      if (data.sections) {
+        for (const section of data.sections) {
+          html += `<div class="report-section">`;
+          if (section.heading) html += `<h3>${escapeHtml(section.heading)}</h3>`;
+          if (section.content) html += `<div class="content">${renderMarkdown(section.content)}</div>`;
+          html += `</div>`;
+        }
       }
 
-      group.appendChild(div);
-      chat.appendChild(group);
-      chat.scrollTop = chat.scrollHeight;
-      return div;
+      if (data.sources && data.sources.length > 0) {
+        html += `<div class="report-sources"><h3>Sources</h3><ul>`;
+        for (const src of data.sources) {
+          const title = escapeHtml(src.title || src.url || "Source");
+          const url = src.url || "#";
+          html += `<li><a href="${url}" target="_blank" rel="noopener">${title}</a>`;
+          if (src.url) html += `<span class="source-url">${escapeHtml(src.url)}</span>`;
+          html += `</li>`;
+        }
+        html += `</ul></div>`;
+      }
+
+      report.innerHTML = html;
+      report.style.display = "block";
     }
 
-    function sendExample(btn) {
-      input.value = btn.textContent;
-      form.dispatchEvent(new Event("submit"));
-    }
-
-    function parseSSE(chunk) {
+    function parseSSE(text) {
       const events = [];
-      const parts = chunk.split("\n\n");
+      const parts = text.split("\n\n");
+      const remainder = parts.pop();
       for (const part of parts) {
         if (!part.trim()) continue;
         let event = "message", data = "";
@@ -513,9 +523,37 @@
           if (line.startsWith("event: ")) event = line.slice(7);
           else if (line.startsWith("data: ")) data = line.slice(6);
         }
-        if (data) events.push({ event, data: JSON.parse(data) });
+        if (data) {
+          try { events.push({ event, data: JSON.parse(data) }); } catch (e) {}
+        }
       }
-      return events;
+      return { events, remainder: remainder || "" };
+    }
+
+    function showLoading() {
+      welcome.style.display = "none";
+      loading.style.display = "block";
+      report.style.display = "none";
+      report.innerHTML = "";
+      loadingMsg.textContent = "Researching...";
+      errorMsg.textContent = "";
+    }
+
+    function showError(msg) {
+      loadingMsg.textContent = "Research failed";
+      errorMsg.textContent = msg;
+      document.querySelector(".loader").style.display = "none";
+    }
+
+    function showReport(data) {
+      loading.style.display = "none";
+      document.querySelector(".loader").style.display = "";
+      renderReport(data);
+    }
+
+    function sendExample(btn) {
+      input.value = btn.textContent;
+      form.dispatchEvent(new Event("submit"));
     }
 
     form.addEventListener("submit", async (e) => {
@@ -524,55 +562,43 @@
       if (!text) return;
 
       input.value = "";
-      addMessage("user", text);
+      showLoading();
 
-      const thinking = addMessage("assistant", "Queuing agent", "thinking");
       const btn = form.querySelector("button[type='submit']");
       btn.disabled = true;
 
       try {
-        const res = await fetch("/chat", {
+        const res = await fetch("/research", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: text, history }),
+          body: JSON.stringify({ question: text }),
         });
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
-        let reply = "";
 
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
-          const events = parseSSE(buffer);
-          buffer = "";
+          const { events, remainder } = parseSSE(buffer);
+          buffer = remainder;
 
           for (const { event, data } of events) {
             if (event === "status") {
-              thinking.textContent = data.message;
+              loadingMsg.textContent = data.message || "Researching...";
             } else if (event === "done") {
-              reply = data.reply;
-              thinking.innerHTML = renderMarkdown(reply);
-              thinking.classList.remove("thinking");
+              showReport(data.report);
             } else if (event === "error") {
-              thinking.textContent = "Error: " + data.message;
-              thinking.classList.remove("thinking");
+              showError(data.message || "Unknown error");
             }
           }
-          chat.scrollTop = chat.scrollHeight;
-        }
-
-        if (reply) {
-          history.push({ role: "user", content: text });
-          history.push({ role: "assistant", content: reply });
-          if (history.length > 20) history = history.slice(-20);
+          mainEl.scrollTop = mainEl.scrollHeight;
         }
       } catch (err) {
-        thinking.textContent = "Error: " + err.message;
-        thinking.classList.remove("thinking");
+        showError(err.message);
       } finally {
         btn.disabled = false;
         input.focus();

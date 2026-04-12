@@ -1,17 +1,14 @@
-import json
-import os
+"""FastAPI web service: routes, static files, and the /research SSE endpoint."""
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from render_sdk import RenderAsync
 
-WORKFLOW_SLUG = os.environ.get("WORKFLOW_SLUG", "langchain-chat-workflow")
+from pipeline import run_pipeline
 
-app = FastAPI(title="LangChain Example")
-render = RenderAsync()
+app = FastAPI(title="Research Agent")
 
 app.add_middleware(
     CORSMiddleware,
@@ -21,38 +18,13 @@ app.add_middleware(
 )
 
 
-class ChatRequest(BaseModel):
-    message: str
-    history: list[dict] = []
+class ResearchRequest(BaseModel):
+    question: str
 
 
-def sse(event: str, data: dict) -> str:
-    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
-
-
-@app.post("/chat")
-async def chat(req: ChatRequest):
-    async def event_stream():
-        try:
-            started = await render.workflows.start_task(
-                f"{WORKFLOW_SLUG}/agent_chat",
-                {"message": req.message, "history": req.history},
-            )
-            yield sse("status", {"status": "pending", "message": "Queuing agent..."})
-
-            async for event in render.workflows.task_run_events([started.id]):
-                if event.status == "running":
-                    yield sse("status", {"status": "running", "message": "Agent is reasoning..."})
-                elif event.status == "completed":
-                    reply = event.results[0] if event.results else "No response."
-                    yield sse("done", {"status": "completed", "reply": reply})
-                elif event.status in ("failed", "canceled"):
-                    msg = getattr(event, "error", None) or "Agent failed after retries"
-                    yield sse("error", {"status": "failed", "message": msg})
-        except Exception as e:
-            yield sse("error", {"status": "failed", "message": str(e)})
-
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
+@app.post("/research")
+async def research(req: ResearchRequest):
+    return StreamingResponse(run_pipeline(req.question), media_type="text/event-stream")
 
 
 @app.get("/health")
