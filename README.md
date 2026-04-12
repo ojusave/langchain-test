@@ -1,4 +1,4 @@
-# LangChain Example: Conversational Agent with Tools
+# LangChain Chat: Conversational Agent with Tools
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/ojusave/langchain-test)
 
@@ -20,34 +20,48 @@ Browser  →  FastAPI  →  LangGraph ReAct Agent  →  Claude Sonnet
 
 **Why LangChain here (vs raw API calls)?**
 
-A direct OpenAI API call can't decide on its own to search Wikipedia, read the result, and then formulate a grounded answer. LangChain's agent framework handles the reasoning loop: the LLM decides which tool to call, observes the result, and keeps looping until it has a final answer. This "ReAct" pattern would take significant boilerplate to build from scratch.
+A direct API call can't decide on its own to search Wikipedia, read the result, and then formulate a grounded answer. LangChain's agent framework handles the reasoning loop: the LLM decides which tool to call, observes the result, and keeps looping until it has a final answer. This "ReAct" pattern would take significant boilerplate to build from scratch.
+
+## Project Structure
+
+```
+├── main.py           # FastAPI app, routes, static serving
+├── agent.py          # Agent config, system prompt, builder
+├── tools.py          # Tool definitions (Wikipedia, calculator)
+├── static/
+│   └── index.html    # Chat UI
+├── render.yaml       # Render Blueprint
+├── requirements.txt  # Python dependencies
+└── .env.example      # Environment variable reference
+```
+
+## Environment Variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | Yes | — | Your Anthropic API key |
+| `ANTHROPIC_MODEL` | No | `claude-sonnet-4-20250514` | Model to use |
+| `AGENT_TEMPERATURE` | No | `0.3` | LLM temperature |
+
+## Deploying to Render
+
+Click the **Deploy to Render** button above, or:
+
+1. Fork/push this repo to GitHub
+2. Go to https://dashboard.render.com/blueprint/new
+3. Connect your repo
+4. Set `ANTHROPIC_API_KEY` when prompted
+5. Click **Apply**
 
 ## Local Development
 
 ```bash
-# 1. Install dependencies
 pip install -r requirements.txt
-
-# 2. Set your Anthropic key
 export ANTHROPIC_API_KEY="sk-ant-..."
-
-# 3. Run the server
 uvicorn main:app --reload --port 8000
 ```
 
 Open http://localhost:8000 in your browser.
-
-## Deploying to Render
-
-This repo includes a `render.yaml` Blueprint for one-click deployment:
-
-1. Push this folder to a GitHub repository
-2. Go to https://dashboard.render.com/blueprint/new
-3. Connect your repo
-4. Set the `ANTHROPIC_API_KEY` environment variable when prompted
-5. Click **Apply** to deploy
-
-The app binds to `0.0.0.0:$PORT` automatically (Render sets `$PORT`).
 
 ## API
 
