@@ -11,5 +11,6 @@ services:
         description: "Required: your Anthropic API key (starts with sk-ant-). Get one at https://console.anthropic.com/"
         required: true
         sensitive: true
+        sync: false
       - key: PYTHON_VERSION
         value: "3.12.3"
