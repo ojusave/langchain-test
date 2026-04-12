@@ -6,11 +6,36 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
+      - key: RENDER_API_KEY
+        displayName: Render API Key
+        description: "Required: your Render API key for triggering workflow tasks. Get one at https://render.com/docs/api#1-create-an-api-key"
+        required: true
+        sensitive: true
+        sync: false
+      - key: WORKFLOW_SLUG
+        displayName: Workflow Slug
+        description: "The slug of the workflow service (defaults to langchain-chat-workflow)"
+        required: false
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+
+  - type: workflow
+    name: langchain-chat-workflow
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python workflow.py
+    envVars:
       - key: ANTHROPIC_API_KEY
         displayName: Anthropic API Key
         description: "Required: your Anthropic API key (starts with sk-ant-). Get one at https://console.anthropic.com/"
         required: true
         sensitive: true
         sync: false
+      - key: ANTHROPIC_MODEL
+        value: "claude-sonnet-4-20250514"
+      - key: AGENT_TEMPERATURE
+        value: "0.3"
       - key: PYTHON_VERSION
         value: "3.12.3"
