@@ -30,7 +30,7 @@ from .tools import build_tools
 
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0.3"))
-MAX_STEPS = 15
+MAX_STEPS = 40
 
 
 def run_research_agent(subtopic: str, criteria: str) -> dict:

@@ -14,8 +14,6 @@ config.
 
 import json
 import os
-import sys
-import traceback
 
 from render_sdk import RenderAsync
 from render_sdk.client.errors import TaskRunError
@@ -48,33 +46,19 @@ async def run_pipeline(question: str):
         started = await render.workflows.start_task(
             f"{WORKFLOW_SLUG}/research", {"question": question}
         )
-        print(f"[orchestrator] task started: id={started.id} status={started.status}", flush=True)
         yield sse("status", {"message": "Researching...", "task_run_id": started.id})
 
         finished = await started
-
-        print(f"[orchestrator] task finished: status={finished.status}", flush=True)
-        print(f"[orchestrator] results type={type(finished.results)}, len={len(finished.results) if finished.results else 0}", flush=True)
-        if finished.results:
-            raw = finished.results[0]
-            print(f"[orchestrator] results[0] type={type(raw)}", flush=True)
-            print(f"[orchestrator] results[0] preview={str(raw)[:500]}", flush=True)
 
         report = {}
         if finished.results:
             raw = finished.results[0]
             report = _to_dict(raw) if not isinstance(raw, dict) else raw
 
-        serialized = json.dumps(report, default=str)
-        print(f"[orchestrator] report size={len(serialized)} bytes, keys={list(report.keys()) if isinstance(report, dict) else 'not-dict'}", flush=True)
-
         yield sse("done", {"report": report})
 
     except TaskRunError as e:
-        print(f"[orchestrator] TaskRunError: {e}", file=sys.stderr, flush=True)
         yield sse("error", {"message": str(e)})
 
     except Exception as e:
-        print(f"[orchestrator] Exception: {e}", file=sys.stderr, flush=True)
-        traceback.print_exc()
         yield sse("error", {"message": str(e)})
