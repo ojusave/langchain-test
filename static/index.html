@@ -586,9 +586,12 @@
           buffer = remainder;
 
           for (const { event, data } of events) {
+            console.log("[SSE]", event, data);
             if (event === "status") {
               loadingMsg.textContent = data.message || "Researching...";
             } else if (event === "done") {
+              console.log("[SSE] report keys:", data.report ? Object.keys(data.report) : "no report");
+              console.log("[SSE] report size:", JSON.stringify(data.report || {}).length, "bytes");
               showReport(data.report);
             } else if (event === "error") {
               showError(data.message || "Unknown error");
