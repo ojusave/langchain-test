@@ -123,7 +123,7 @@
       display: none;
       text-align: center;
       margin: auto;
-      padding: 3rem 2rem;
+      padding: 2.5rem 2rem;
       max-width: 480px;
     }
 
@@ -139,16 +139,55 @@
     #loading h2 {
       font-size: 1rem;
       color: var(--text-muted);
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
       font-family: 'Inter', sans-serif;
       font-weight: 500;
     }
 
-    #loading .loading-detail {
-      font-size: 0.775rem;
+    #elapsed-timer {
+      font-size: 0.7rem;
       color: var(--text-dim);
-      line-height: 1.6;
+      font-variant-numeric: tabular-nums;
       margin-bottom: 1.25rem;
+    }
+
+    .phase-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      text-align: left;
+      margin-bottom: 1.25rem;
+    }
+
+    .phase-step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      transition: color 0.2s;
+    }
+
+    .phase-step.active { color: var(--text); }
+    .phase-step.done { color: var(--green); }
+
+    .phase-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      border: 1.5px solid var(--text-dim);
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+
+    .phase-step.active .phase-dot {
+      border-color: var(--render-purple);
+      background: var(--render-purple);
+      box-shadow: 0 0 6px rgba(108,99,255,0.5);
+    }
+
+    .phase-step.done .phase-dot {
+      border-color: var(--green);
+      background: var(--green);
     }
 
     #loading .dashboard-link {
@@ -381,8 +420,22 @@
 
     <div id="loading">
       <div class="loader"></div>
-      <h2 id="loading-msg">Researching...</h2>
-      <p class="loading-detail">The orchestrator task is chaining subtasks: plan, parallel searches, parallel analyses, and synthesis. Each runs on its own compute with automatic retries.</p>
+      <h2 id="loading-msg">Starting research…</h2>
+      <div id="elapsed-timer">0:00</div>
+      <div class="phase-steps" id="phase-steps">
+        <div class="phase-step" data-phase="plan">
+          <span class="phase-dot"></span><span>Planning research approach</span>
+        </div>
+        <div class="phase-step" data-phase="search">
+          <span class="phase-dot"></span><span>Searching for sources</span>
+        </div>
+        <div class="phase-step" data-phase="analyze">
+          <span class="phase-dot"></span><span>Analyzing findings</span>
+        </div>
+        <div class="phase-step" data-phase="synthesize">
+          <span class="phase-dot"></span><span>Synthesizing report</span>
+        </div>
+      </div>
       <a href="https://dashboard.render.com/" target="_blank" rel="noopener" class="dashboard-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         Watch the task tree in the Render Dashboard
@@ -431,8 +484,51 @@
     const welcome = document.getElementById("welcome");
     const loading = document.getElementById("loading");
     const loadingMsg = document.getElementById("loading-msg");
+    const elapsedTimer = document.getElementById("elapsed-timer");
     const errorMsg = document.getElementById("error-msg");
     const report = document.getElementById("report");
+
+    let timerInterval = null;
+    let startTime = 0;
+
+    const PHASE_THRESHOLDS = [
+      { key: "plan", at: 0 },
+      { key: "search", at: 12 },
+      { key: "analyze", at: 40 },
+      { key: "synthesize", at: 80 },
+    ];
+
+    function formatElapsed(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${m}:${String(s).padStart(2, "0")}`;
+    }
+
+    function updatePhaseSteps(elapsed) {
+      const steps = document.querySelectorAll(".phase-step");
+      let activeIdx = 0;
+      for (let i = 0; i < PHASE_THRESHOLDS.length; i++) {
+        if (elapsed >= PHASE_THRESHOLDS[i].at) activeIdx = i;
+      }
+      steps.forEach((step, i) => {
+        step.classList.remove("active", "done");
+        if (i < activeIdx) step.classList.add("done");
+        else if (i === activeIdx) step.classList.add("active");
+      });
+    }
+
+    function startTimer() {
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        elapsedTimer.textContent = formatElapsed(elapsed);
+        updatePhaseSteps(elapsed);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    }
 
     function renderMarkdown(text) {
       let html = text
@@ -534,20 +630,36 @@
       loading.style.display = "block";
       report.style.display = "none";
       report.innerHTML = "";
-      loadingMsg.textContent = "Researching...";
+      loadingMsg.textContent = "Starting research…";
+      elapsedTimer.textContent = "0:00";
       errorMsg.textContent = "";
+      document.querySelector(".loader").style.display = "";
+      document.querySelectorAll(".phase-step").forEach(s => s.classList.remove("active", "done"));
+      startTimer();
     }
 
     function showError(msg) {
+      stopTimer();
       loadingMsg.textContent = "Research failed";
       errorMsg.textContent = msg;
       document.querySelector(".loader").style.display = "none";
+      document.querySelectorAll(".phase-step.active").forEach(s => {
+        s.classList.remove("active");
+        s.style.color = "var(--red)";
+      });
     }
 
     function showReport(data) {
-      loading.style.display = "none";
-      document.querySelector(".loader").style.display = "";
-      renderReport(data);
+      stopTimer();
+      document.querySelectorAll(".phase-step").forEach(s => {
+        s.classList.remove("active");
+        s.classList.add("done");
+      });
+      setTimeout(() => {
+        loading.style.display = "none";
+        document.querySelector(".loader").style.display = "";
+        renderReport(data);
+      }, 400);
     }
 
     function sendExample(btn) {
@@ -588,7 +700,10 @@
           for (const { event, data } of events) {
             console.log("[SSE]", event, JSON.stringify(data).slice(0, 500));
             if (event === "status") {
-              loadingMsg.textContent = data.message || "Researching...";
+              loadingMsg.textContent = data.message || "Researching…";
+              if (data.elapsed != null) {
+                updatePhaseSteps(data.elapsed);
+              }
             } else if (event === "done") {
               console.log("[SSE] report keys:", data.report ? Object.keys(data.report) : "null/empty");
               showReport(data.report);

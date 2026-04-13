@@ -4,23 +4,36 @@ Pipeline orchestrator: starts the research workflow task and streams SSE.
 This is the bridge between the stateless web service and the durable
 workflow service. It:
   1. Triggers the `research` orchestrator task via the Render SDK
-  2. Awaits its completion (the SDK handles polling)
-  3. Streams status updates as Server-Sent Events (SSE)
+  2. Polls for completion, streaming live progress as SSE
+  3. Extracts the final report and sends it to the frontend
 
 The orchestrator itself does no research work. All compute happens in
 the workflow service on isolated instances with their own retry/timeout
 config.
 """
 
+import asyncio
 import json
 import os
+import time
 
 from render_sdk import RenderAsync
 from render_sdk.client.errors import TaskRunError
 
 WORKFLOW_SLUG = os.environ.get("WORKFLOW_SLUG", "research-agent-workflow")
+POLL_INTERVAL = 4  # seconds between status checks
 
 render = RenderAsync()
+
+# Pipeline phases shown in order as time progresses.
+# (min_elapsed_seconds, label)
+_PHASES = [
+    (0, "Planning research approach…"),
+    (12, "Searching for sources…"),
+    (40, "Deep-diving into subtopics…"),
+    (80, "Analyzing findings…"),
+    (130, "Synthesizing final report…"),
+]
 
 
 def _to_dict(obj):
@@ -42,42 +55,76 @@ def _extract_report(results) -> dict:
     """Pull the report dict out of whatever shape the SDK gives us for results."""
     if not results:
         return {}
-
-    # results might be a list wrapping the return value, or the value itself
     raw = results
     if isinstance(results, list) and len(results) > 0:
         raw = results[0]
-
     if isinstance(raw, dict):
         return raw
-
     return _to_dict(raw) if raw is not None else {}
 
 
+def _phase_message(elapsed: int) -> str:
+    msg = _PHASES[0][1]
+    for threshold, label in _PHASES:
+        if elapsed >= threshold:
+            msg = label
+    return msg
+
+
 async def run_pipeline(question: str):
-    """Start the research orchestrator task and yield SSE events until it completes."""
+    """Start the research task and poll for completion, streaming progress."""
     try:
-        yield sse("status", {"message": "Starting research..."})
+        yield sse("status", {"message": "Starting research…", "elapsed": 0})
 
         started = await render.workflows.start_task(
             f"{WORKFLOW_SLUG}/research", {"question": question}
         )
-        yield sse("status", {"message": "Researching...", "task_run_id": started.id})
+        task_run_id = started.id
+        t0 = time.monotonic()
 
-        finished = await started
+        yield sse("status", {
+            "message": "Planning research approach…",
+            "task_run_id": task_run_id,
+            "elapsed": 0,
+        })
 
-        print(f"[PIPELINE] status={finished.status}", flush=True)
-        print(f"[PIPELINE] results type={type(finished.results)}", flush=True)
-        print(f"[PIPELINE] results value={finished.results!r}"[:2000], flush=True)
+        # Poll until the task reaches a terminal state
+        while True:
+            await asyncio.sleep(POLL_INTERVAL)
+            elapsed = int(time.monotonic() - t0)
 
-        report = _extract_report(finished.results)
+            details = await render.workflows.get_task_run(task_run_id)
+            status_val = details.status if isinstance(details.status, str) else details.status.value
 
-        print(f"[PIPELINE] extracted report keys={list(report.keys()) if isinstance(report, dict) else type(report)}", flush=True)
+            if status_val in ("completed", "failed", "canceled"):
+                break
 
-        if not report:
-            yield sse("error", {"message": "Workflow completed but returned empty results. Check workflow service logs."})
+            yield sse("status", {
+                "message": _phase_message(elapsed),
+                "elapsed": elapsed,
+            })
+
+        elapsed = int(time.monotonic() - t0)
+        print(f"[PIPELINE] finished: status={status_val}, elapsed={elapsed}s", flush=True)
+        print(f"[PIPELINE] results type={type(details.results)}", flush=True)
+        print(f"[PIPELINE] results value={repr(details.results)[:2000]}", flush=True)
+
+        if status_val == "completed":
+            report = _extract_report(details.results)
+            print(f"[PIPELINE] report keys={list(report.keys()) if isinstance(report, dict) else type(report)}", flush=True)
+
+            if report:
+                yield sse("done", {"report": report, "elapsed": elapsed})
+            else:
+                yield sse("error", {
+                    "message": "Workflow completed but returned empty results. Check workflow logs.",
+                    "elapsed": elapsed,
+                })
+        elif status_val == "failed":
+            err = getattr(details, "error", None) or "Task failed"
+            yield sse("error", {"message": str(err), "elapsed": elapsed})
         else:
-            yield sse("done", {"report": report})
+            yield sse("error", {"message": f"Task was {status_val}", "elapsed": elapsed})
 
     except TaskRunError as e:
         print(f"[PIPELINE] TaskRunError: {e}", flush=True)
