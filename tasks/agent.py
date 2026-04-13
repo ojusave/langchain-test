@@ -11,8 +11,8 @@ This is where LangGraph earns its place. The agent runs a tool-calling loop:
 This loop is non-deterministic: the agent might search 2 times for a simple
 subtopic or 8 times for a complex one. You cannot hardcode this pipeline.
 
-The recursion_limit caps the maximum agent steps to prevent runaway loops
-(each tool call + response counts as one step).
+The recursion_limit is set high (effectively unlimited) because the
+Workflow task timeout (120s) is the real safety net against runaway loops.
 
 LangGraph is used here instead of a raw while-loop because:
   - create_react_agent handles the message state, tool dispatch, and
@@ -30,7 +30,7 @@ from .tools import build_tools
 
 MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 TEMPERATURE = float(os.environ.get("AGENT_TEMPERATURE", "0.3"))
-MAX_STEPS = 40
+MAX_STEPS = 100
 
 
 def run_research_agent(subtopic: str, criteria: str) -> dict:
