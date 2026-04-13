@@ -5,6 +5,7 @@ services:
     plan: starter
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: RENDER_API_KEY
         displayName: Render API Key
@@ -17,31 +18,5 @@ services:
         description: "The slug of the workflow service (defaults to research-agent-workflow)"
         required: false
         sync: false
-      - key: PYTHON_VERSION
-        value: "3.12.3"
-
-  - type: workflow
-    name: research-agent-workflow
-    runtime: python
-    plan: starter
-    buildCommand: pip install -r requirements.txt
-    startCommand: python -m tasks
-    envVars:
-      - key: ANTHROPIC_API_KEY
-        displayName: Anthropic API Key
-        description: "Required: your Anthropic API key (starts with sk-ant-). Get one at https://console.anthropic.com/"
-        required: true
-        sensitive: true
-        sync: false
-      - key: EXA_API_KEY
-        displayName: Exa API Key
-        description: "Required: your Exa API key for web search. Get one at https://exa.ai/"
-        required: true
-        sensitive: true
-        sync: false
-      - key: ANTHROPIC_MODEL
-        value: "claude-sonnet-4-20250514"
-      - key: AGENT_TEMPERATURE
-        value: "0.3"
       - key: PYTHON_VERSION
         value: "3.12.3"

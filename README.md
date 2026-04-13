@@ -160,13 +160,34 @@ Every task run shows inputs, outputs, duration, retry history, and error message
 
 ## Deploy
 
+This app requires two Render services: a **web service** (created by the Blueprint) and a **workflow service** (created manually in the Dashboard).
+
+### Step 1: Deploy the web service
+
 Click the **Deploy to Render** button above. You'll be prompted to set:
 
 - `RENDER_API_KEY`: your [Render API key](https://render.com/docs/api#1-create-an-api-key) (for the web service to trigger workflows)
-- `ANTHROPIC_API_KEY`: your [Anthropic API key](https://console.anthropic.com/) (for the workflow service)
-- `EXA_API_KEY`: your [Exa API key](https://exa.ai/) (for the workflow service)
 
-Then click **Apply**. The Blueprint creates both services automatically.
+Click **Apply**. The Blueprint creates the web service.
+
+### Step 2: Create the workflow service
+
+Render Workflows are not yet supported in Blueprint files, so you'll create the workflow service manually:
+
+1. In the [Render Dashboard](https://dashboard.render.com), click **New** > **Workflow**
+2. Connect the same GitHub repo
+3. Set **Build Command**: `pip install -r requirements.txt`
+4. Set **Start Command**: `python -m tasks`
+5. Set the following environment variables:
+   - `ANTHROPIC_API_KEY` (required): your [Anthropic API key](https://console.anthropic.com/)
+   - `EXA_API_KEY` (required): your [Exa API key](https://exa.ai/)
+   - `ANTHROPIC_MODEL` (optional, default `claude-sonnet-4-20250514`)
+   - `AGENT_TEMPERATURE` (optional, default `0.3`)
+   - `PYTHON_VERSION`: `3.12.3`
+6. Name the service `research-agent-workflow` (this matches the default `WORKFLOW_SLUG`)
+7. Click **Create Workflow**
+
+The web service will automatically discover the workflow service by its slug.
 
 Don't have a Render account? [Sign up here](https://render.com/register).
 
@@ -207,7 +228,7 @@ Don't have a Render account? [Sign up here](https://render.com/register).
 │   └── research.py              # Orchestrator: chains plan -> agents -> synthesize
 ├── static/
 │   └── index.html               # Research UI
-├── render.yaml                  # Render Blueprint (web + workflow services)
+├── render.yaml                  # Render Blueprint (web service)
 ├── requirements.txt             # Python dependencies
 └── .env.example                 # Environment variable reference
 ```
