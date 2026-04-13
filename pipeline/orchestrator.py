@@ -13,17 +13,32 @@ config.
 """
 
 import json
+import logging
 import os
 
 from render_sdk import RenderAsync
+from render_sdk.client.errors import TaskRunError
+
+logger = logging.getLogger(__name__)
 
 WORKFLOW_SLUG = os.environ.get("WORKFLOW_SLUG", "research-agent-workflow")
 
 render = RenderAsync()
 
 
+def _to_dict(obj):
+    """Convert SDK objects to plain dicts for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: _to_dict(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_dict(i) for i in obj]
+    if hasattr(obj, "__dict__") and not isinstance(obj, (str, int, float, bool)):
+        return {k: _to_dict(v) for k, v in obj.__dict__.items() if not k.startswith("_")}
+    return obj
+
+
 def sse(event: str, data: dict) -> str:
-    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+    return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
 async def run_pipeline(question: str):
@@ -38,12 +53,21 @@ async def run_pipeline(question: str):
 
         finished = await started
 
-        if finished.status.value == "completed":
-            report = finished.results[0] if finished.results else {}
-            yield sse("done", {"report": report})
-        else:
-            error = getattr(finished, "error", None) or "Research failed after retries."
-            yield sse("error", {"message": str(error)})
+        report = {}
+        if finished.results:
+            raw = finished.results[0]
+            report = _to_dict(raw) if not isinstance(raw, dict) else raw
+
+        logger.info("Workflow completed, report keys: %s, size: %d bytes",
+                     list(report.keys()) if isinstance(report, dict) else "not-a-dict",
+                     len(json.dumps(report, default=str)))
+
+        yield sse("done", {"report": report})
+
+    except TaskRunError as e:
+        logger.error("Workflow task failed: %s", e)
+        yield sse("error", {"message": str(e)})
 
     except Exception as e:
+        logger.error("Pipeline error: %s", e, exc_info=True)
         yield sse("error", {"message": str(e)})
