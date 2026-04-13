@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Research Agent</title>
   <link rel="icon" href="https://render.com/icon.svg" type="image/svg+xml" />
+  <script>
+    (function(){var t=localStorage.getItem("theme");if(!t)t=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";document.documentElement.className=t})();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto:wght@300&display=swap" rel="stylesheet" />
@@ -14,14 +17,38 @@
     :root {
       --render-purple: #6c63ff;
       --render-purple-hover: #5a52d5;
+      --green: #22c55e;
+      --red: #ef4444;
+    }
+
+    html.light {
+      --bg: #fafafa;
+      --surface: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --text: #18181b;
+      --text-muted: #52525b;
+      --text-dim: #a1a1aa;
+      --text-strong: #09090b;
+      --overlay-subtle: rgba(0,0,0,0.03);
+      --overlay-medium: rgba(0,0,0,0.05);
+      --overlay-strong: rgba(0,0,0,0.08);
+      --code-bg: rgba(0,0,0,0.04);
+      --sep: #e4e4e7;
+    }
+
+    html.dark {
       --bg: #0a0a0a;
       --surface: #141416;
       --border: rgba(255,255,255,0.08);
       --text: #e4e4e7;
       --text-muted: #71717a;
       --text-dim: #52525b;
-      --green: #22c55e;
-      --red: #ef4444;
+      --text-strong: #fafafa;
+      --overlay-subtle: rgba(255,255,255,0.04);
+      --overlay-medium: rgba(255,255,255,0.06);
+      --overlay-strong: rgba(255,255,255,0.08);
+      --code-bg: rgba(255,255,255,0.08);
+      --sep: #27272a;
     }
 
     body {
@@ -61,12 +88,12 @@
     header h1 {
       font-size: 0.875rem; font-weight: 600;
       font-family: 'Inter', sans-serif;
-      color: #fafafa; letter-spacing: -0.01em;
+      color: var(--text-strong); letter-spacing: -0.01em;
     }
 
     header .tag {
       font-size: 0.6rem; padding: 0.125rem 0.4rem;
-      background: rgba(255,255,255,0.06); color: var(--text-muted);
+      background: var(--overlay-medium); color: var(--text-muted);
       font-weight: 500; letter-spacing: 0.02em; text-transform: uppercase;
       border: 1px solid var(--border);
     }
@@ -80,7 +107,7 @@
       text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem;
       font-family: 'Inter', sans-serif;
     }
-    .header-btn:hover { background: rgba(255,255,255,0.04); color: var(--text); text-decoration: none; }
+    .header-btn:hover { background: var(--overlay-subtle); color: var(--text); text-decoration: none; }
     .header-btn.primary { background: var(--render-purple); border-color: var(--render-purple); color: #fff; }
     .header-btn.primary:hover { background: var(--render-purple-hover); }
     .header-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
@@ -108,14 +135,14 @@
       justify-content: center; margin-top: 1rem;
     }
     .welcome .examples button {
-      padding: 0.4rem 0.75rem; background: rgba(255,255,255,0.04);
-      border: 1px solid var(--border); color: #a1a1aa;
+      padding: 0.4rem 0.75rem; background: var(--overlay-subtle);
+      border: 1px solid var(--border); color: var(--text-muted);
       font-size: 0.75rem; font-family: 'Inter', sans-serif;
       cursor: pointer; transition: all 0.15s;
     }
     .welcome .examples button:hover {
-      background: rgba(255,255,255,0.08);
-      border-color: rgba(255,255,255,0.12); color: var(--text);
+      background: var(--overlay-strong);
+      border-color: var(--overlay-strong); color: var(--text);
     }
 
     /* Loading state */
@@ -230,7 +257,7 @@
 
     #report h2 {
       font-size: 1.3rem;
-      color: #fafafa;
+      color: var(--text-strong);
       margin-bottom: 0.75rem;
       font-weight: 400;
     }
@@ -248,7 +275,7 @@
 
     #report .report-section h3 {
       font-size: 1rem;
-      color: #e4e4e7;
+      color: var(--text);
       font-weight: 500;
       font-family: 'Inter', sans-serif;
       margin-bottom: 0.5rem;
@@ -266,14 +293,14 @@
       margin: 0.4rem 0; padding-left: 1.25rem;
     }
     #report .report-section .content li { margin: 0.15rem 0; }
-    #report .report-section .content strong { color: #fafafa; font-weight: 600; }
+    #report .report-section .content strong { color: var(--text-strong); font-weight: 600; }
     #report .report-section .content code {
-      background: rgba(255,255,255,0.08);
+      background: var(--code-bg);
       padding: 0.1rem 0.35rem; font-size: 0.8rem;
       font-family: "SF Mono", "Fira Code", monospace;
     }
     #report .report-section .content pre {
-      background: rgba(0,0,0,0.4); border: 1px solid var(--border);
+      background: var(--code-bg); border: 1px solid var(--border);
       padding: 0.625rem 0.75rem; margin: 0.5rem 0;
       overflow-x: auto; font-size: 0.8rem;
     }
@@ -300,7 +327,7 @@
     #report .report-sources li {
       font-size: 0.8rem;
       padding: 0.35rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid var(--overlay-subtle);
     }
 
     #report .report-sources li:last-child { border-bottom: none; }
@@ -333,15 +360,15 @@
     .feedback-btn {
       width: 32px; height: 32px;
       display: inline-flex; align-items: center; justify-content: center;
-      background: rgba(255,255,255,0.04);
+      background: var(--overlay-subtle);
       border: 1px solid var(--border);
       color: var(--text-muted);
       cursor: pointer;
       transition: all 0.15s;
-      border-radius: 4px;
+      border-radius: 0;
     }
 
-    .feedback-btn:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+    .feedback-btn:hover { background: var(--overlay-strong); color: var(--text); }
     .feedback-btn.selected { border-color: var(--render-purple); color: var(--render-purple); background: rgba(108,99,255,0.1); }
     .feedback-btn:disabled { opacity: 0.5; cursor: default; }
     .feedback-btn svg { width: 16px; height: 16px; }
@@ -396,11 +423,11 @@
     }
     footer a { color: var(--text-muted); }
     footer a:hover { color: var(--text); }
-    footer .sep { color: #27272a; }
+    footer .sep { color: var(--sep); }
 
     #main::-webkit-scrollbar { width: 4px; }
-    #main::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
-    #main::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+    #main::-webkit-scrollbar-thumb { background: var(--overlay-strong); }
+    #main::-webkit-scrollbar-thumb:hover { background: var(--overlay-strong); }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(6px); }
@@ -440,6 +467,10 @@
       <a id="signup-btn" href="" target="_blank" rel="noopener" class="header-btn primary">
         <span class="btn-label">Sign up on Render</span>
       </a>
+      <button id="theme-toggle" class="header-btn" title="Toggle theme">
+        <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg id="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+      </button>
     </div>
   </header>
 
@@ -499,6 +530,26 @@
   </footer>
 
   <script>
+    (function initTheme() {
+      const saved = localStorage.getItem("theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const theme = saved || (prefersDark ? "dark" : "light");
+      document.documentElement.className = theme;
+    })();
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.classList.contains("dark") ? "light" : "dark";
+      html.className = next;
+      localStorage.setItem("theme", next);
+      updateThemeIcons(next);
+    }
+
+    function updateThemeIcons(theme) {
+      document.getElementById("icon-sun").style.display = theme === "dark" ? "none" : "block";
+      document.getElementById("icon-moon").style.display = theme === "dark" ? "block" : "none";
+    }
+
     const GITHUB_REPO = "https://github.com/ojusave/langchain-test";
 
     function renderSignupUrlWithUtms(content = "footer_link") {
@@ -515,6 +566,8 @@
     document.getElementById("deploy-btn").href = `https://render.com/deploy?repo=${encodeURIComponent(GITHUB_REPO)}`;
     document.getElementById("github-btn").href = GITHUB_REPO;
     document.getElementById("source-link").href = GITHUB_REPO;
+    document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
+    updateThemeIcons(document.documentElement.classList.contains("dark") ? "dark" : "light");
 
     const form = document.getElementById("form");
     const input = document.getElementById("input");
