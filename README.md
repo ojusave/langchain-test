@@ -26,18 +26,20 @@
 
 Ask a question. The agent:
 
-1. **Plans**: Claude breaks it into focused subtopics with success criteria (as many as the question needs).
-2. **Researches**: LangGraph agents run in parallel (one per subtopic), each using Exa semantic search. Claude decides the search strategy at runtime: how many searches, when to refine, when to stop.
-3. **Synthesizes**: Claude merges all findings into a structured report with sections and sources.
+1. **Classifies**: Claude determines if the query needs web research or can be answered directly.
+2. **Plans**: Claude breaks research queries into focused subtopics with success criteria (as many as the question needs).
+3. **Researches**: LangGraph agents run in parallel (one per subtopic), each using Exa semantic search. Claude decides the search strategy at runtime: how many searches, when to refine, when to stop.
+4. **Synthesizes**: Claude merges all findings into a structured report with sections and sources.
+
+Non-research queries (greetings, simple questions, coding help) get a direct reply without triggering Exa searches.
 
 The UI streams live progress as an activity feed, showing which tool is doing what at each step.
 
 ```
 User question
-  → plan_research (Claude)
-  → N× research_subtopic (LangGraph + Exa, in parallel)
-  → synthesize (Claude)
-  → Structured report
+  → classify_query (Claude)
+  ├─ research → plan_research → N× research_subtopic (LangGraph + Exa) → synthesize → report
+  └─ direct → Claude reply (no Exa)
 ```
 
 ### What Each Layer Does
@@ -152,6 +154,7 @@ The web service discovers the workflow by its slug automatically.
 │   ├── tools.py             # Exa tools for LangGraph
 │   ├── agent.py             # LangGraph ReAct agent
 │   ├── research_agent.py    # Workflow task wrapping the agent
+│   ├── classify.py          # classify_query task (research vs direct)
 │   ├── plan.py              # plan_research task
 │   └── synthesize.py        # synthesize task
 ├── static/
@@ -179,8 +182,14 @@ For follow-up queries within a thread:
 { "question": "What about the cost challenges?", "thread_id": "uuid-from-done-event" }
 ```
 
-**SSE events:**
+**SSE events (research query):**
 ```
+event: status
+data: {"phase": "classifying", "tools": ["Render Workflows", "LangChain", "Claude"]}
+
+event: classified
+data: {"type": "research", "tools": [...]}
+
 event: status
 data: {"phase": "planning", "tools": ["Render Workflows", "LangChain", "Claude"]}
 
@@ -198,6 +207,18 @@ data: {"phase": "synthesizing", "tools": ["Render Workflows", "LangChain", "Clau
 
 event: done
 data: {"report": {...}, "run_id": "...", "thread_id": "...", "elapsed": 68, "tools": [...]}
+```
+
+**SSE events (direct query, e.g. "hi"):**
+```
+event: status
+data: {"phase": "classifying", "tools": [...]}
+
+event: classified
+data: {"type": "direct", "tools": [...]}
+
+event: direct_answer
+data: {"reply": "Hello! I'm a research agent...", "run_id": "...", "thread_id": "...", "elapsed": 3, "tools": [...]}
 ```
 
 ### `POST /feedback`

@@ -140,6 +140,9 @@
     .dashboard-link:hover { background: rgba(108,99,255,0.12); border-color: rgba(108,99,255,0.4); text-decoration: none; }
     .dashboard-link svg { width: 12px; height: 12px; }
 
+    /* --- Direct answer --- */
+    .direct-answer { background: var(--surface); border: 1px solid var(--border); padding: 1.25rem 1.5rem; margin-top: 1rem; animation: fadeUp 0.3s ease-out; font-size: 0.9rem; line-height: 1.7; color: var(--text); }
+
     /* --- Report --- */
     .report-card { background: var(--surface); border: 1px solid var(--border); padding: 2rem; margin-top: 1rem; animation: fadeUp 0.3s ease-out; }
     .report-card h2 { font-size: 1.3rem; color: var(--text-strong); margin-bottom: 0.75rem; font-weight: 400; }
@@ -350,6 +353,7 @@
     let liveFeed = null;
     let liveTimer = null;
     let liveError = null;
+    let classifyItem = null;
     let planningItem = null;
     let agentItems = {};
     let synthesizingItem = null;
@@ -420,8 +424,14 @@
 
         for (const entry of thread.entries) {
           const block = createEntryBlock(entry.question);
-          const reportCard = buildReportHtml(entry.report, entry.run_id);
-          block.appendChild(reportCard);
+          if (entry.report && entry.report.reply && !entry.report.sections) {
+            const answerEl = document.createElement("div");
+            answerEl.className = "direct-answer";
+            answerEl.innerHTML = renderMarkdown(entry.report.reply);
+            block.appendChild(answerEl);
+          } else {
+            block.appendChild(buildReportHtml(entry.report, entry.run_id));
+          }
           threadEl.appendChild(block);
           currentRunId = entry.run_id || null;
         }
@@ -540,13 +550,49 @@
     // SSE event handlers
     // -----------------------------------------------------------------------
     function handleStatus(data) {
-      if (data.phase === "planning") {
+      if (data.phase === "classifying") {
+        classifyItem = addActivityItem(
+          "<strong>Render Workflows</strong> dispatched classify task: <strong>Claude</strong> is analyzing your query...", "active"
+        );
+      } else if (data.phase === "planning") {
         planningItem = addActivityItem(
           "<strong>Render Workflows</strong> dispatched the plan task: <strong>Claude</strong> is breaking down your question...", "active"
         );
       } else if (data.phase === "synthesizing") {
         synthesizingItem = addActivityItem("<strong>Claude</strong> is synthesizing the final report...", "active");
       }
+    }
+
+    function handleClassified(data) {
+      if (classifyItem) markItemDone(classifyItem);
+      const label = data.type === "research"
+        ? "<strong>Claude</strong> classified this as a research query"
+        : "<strong>Claude</strong> classified this as a direct question";
+      addActivityItem(label, "done");
+    }
+
+    function handleDirectAnswer(data) {
+      stopTimer();
+      currentRunId = data.run_id || null;
+      if (data.thread_id) currentThreadId = data.thread_id;
+
+      const tools = data.tools || [];
+      if (tools.includes("LangSmith")) {
+        addActivityItem("<strong>LangSmith</strong> traced all calls in this pipeline", "done");
+      }
+
+      setTimeout(() => {
+        if (liveBlock) {
+          const answerEl = document.createElement("div");
+          answerEl.className = "direct-answer";
+          answerEl.innerHTML = renderMarkdown(data.reply || "");
+          liveBlock.appendChild(answerEl);
+          mainEl.scrollTop = mainEl.scrollHeight;
+        }
+        loadHistory();
+        highlightSidebar(currentThreadId);
+        updateInputPlaceholder();
+      }, 300);
     }
 
     function handlePlan(data) {
@@ -609,6 +655,7 @@
 
     function handleError(data) {
       stopTimer();
+      if (classifyItem && classifyItem.classList.contains("active")) markItemError(classifyItem);
       if (planningItem) markItemError(planningItem);
       if (synthesizingItem) markItemError(synthesizingItem);
       for (const key of Object.keys(agentItems)) {
@@ -738,6 +785,7 @@
       threadEl.style.display = "block";
 
       // Reset per-entry live state
+      classifyItem = null;
       planningItem = null;
       agentItems = {};
       synthesizingItem = null;
@@ -774,6 +822,8 @@
           buffer = remainder;
           for (const { event, data } of events) {
             if (event === "status") handleStatus(data);
+            else if (event === "classified") handleClassified(data);
+            else if (event === "direct_answer") handleDirectAnswer(data);
             else if (event === "plan") handlePlan(data);
             else if (event === "agent_start") handleAgentStart(data);
             else if (event === "agent_done") handleAgentDone(data);

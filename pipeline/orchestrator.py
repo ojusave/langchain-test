@@ -1,11 +1,12 @@
 """
-Pipeline orchestrator: runs plan, research agents, and synthesize as
-individual workflow tasks, streaming real-time progress via SSE.
+Pipeline orchestrator: runs classify, plan, research agents, and synthesize
+as individual workflow tasks, streaming real-time progress via SSE.
 
 The web service calls run_pipeline(), which:
-  1. Starts plan_research → polls → extracts subtopics
-  2. Starts N research_subtopic tasks in parallel → polls each → reports completions
-  3. Starts synthesize → polls → extracts report
+  1. Starts classify_query → if "direct", returns the reply immediately
+  2. Starts plan_research → polls → extracts subtopics
+  3. Starts N research_subtopic tasks in parallel → polls each → reports completions
+  4. Starts synthesize → polls → extracts report
 
 Each task runs on the workflow service with its own retry/timeout config.
 The orchestrator only dispatches and polls: no research logic here.
@@ -100,6 +101,34 @@ async def run_pipeline(
 
     try:
         run_id = start_run(question)
+
+        # Phase 0: classify
+        yield sse("status", {
+            "phase": "classifying",
+            "tools": _tools("Render Workflows", "LangChain", "Claude"),
+        })
+
+        classification = await _start_and_wait("classify_query", {"question": question})
+        query_type = classification.get("type", "research")
+
+        yield sse("classified", {
+            "type": query_type,
+            "tools": _tools("Render Workflows", "LangChain", "Claude"),
+        })
+
+        if query_type == "direct":
+            elapsed = int(time.monotonic() - t0)
+            reply = classification.get("reply", "I can help with research questions.")
+            complete_run(run_id, {"reply": reply})
+            await save_entry(thread_id, question, {"reply": reply}, run_id)
+            yield sse("direct_answer", {
+                "reply": reply,
+                "run_id": run_id,
+                "thread_id": thread_id,
+                "elapsed": elapsed,
+                "tools": _tools("Render Workflows", "LangChain", "Claude"),
+            })
+            return
 
         # Phase 1: plan
         yield sse("status", {
