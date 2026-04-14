@@ -23,20 +23,27 @@ app = Workflows()
     timeout_seconds=30,
     retry=Retry(max_retries=1, wait_duration_ms=2000, backoff_scaling=1),
 )
-def classify_query(question: str) -> dict:
+def classify_query(question: str, prior_context: str | None = None) -> dict:
     """Classify a query as needing research or answerable directly."""
-    raw = ask(
-        system=(
-            "You are a query classifier. Determine if the user's message requires "
-            "web research (searching for current information, facts, data, news, etc.) "
-            "or can be answered directly (greetings, simple questions, math, definitions, "
-            "opinions, coding help, etc.).\n\n"
-            "Return ONLY a JSON object with:\n"
-            '- "type": either "research" or "direct"\n'
-            '- "reply": if type is "direct", a helpful response to the user. '
-            'If type is "research", omit this field.\n'
-            "No other text."
-        ),
-        user=question,
+    system = (
+        "You are a query classifier. Determine if the user's message requires "
+        "web research (searching for current information, facts, data, news, etc.) "
+        "or can be answered directly (greetings, simple questions, math, definitions, "
+        "opinions, coding help, etc.).\n\n"
+        "Return ONLY a JSON object with:\n"
+        '- "type": either "research" or "direct"\n'
+        '- "reply": if type is "direct", a helpful response to the user. '
+        'If type is "research", omit this field.\n'
+        "No other text."
     )
+
+    if prior_context:
+        system += (
+            "\n\nThis is a follow-up message in an existing research thread. "
+            "If the user is asking for more detail, corrections, or a different angle "
+            "on the previous research, classify it as \"research\".\n"
+            f"{prior_context}"
+        )
+
+    raw = ask(system=system, user=question)
     return parse_json(raw, {"type": "research"})

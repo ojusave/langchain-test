@@ -108,7 +108,11 @@ async def run_pipeline(
             "tools": _tools("Render Workflows", "LangChain", "Claude"),
         })
 
-        classification = await _start_and_wait("classify_query", {"question": question})
+        classify_params = {"question": question}
+        if prior_context:
+            classify_params["prior_context"] = prior_context
+
+        classification = await _start_and_wait("classify_query", classify_params)
         query_type = classification.get("type", "research")
 
         yield sse("classified", {
