@@ -229,12 +229,8 @@
       <span class="tag">Built on Render</span>
     </div>
     <div class="actions">
-      <a id="deploy-btn" href="" target="_blank" rel="noopener" class="header-btn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
-        <span class="btn-label">Deploy to Render</span>
-      </a>
-      <a id="signup-btn" href="" target="_blank" rel="noopener" class="header-btn primary">
-        <span class="btn-label">Sign up on Render</span>
+      <a id="deploy-btn" href="" target="_blank" rel="noopener">
+        <img src="https://render.com/images/deploy-to-render-button.svg" alt="Deploy to Render" style="height:28px;vertical-align:middle" />
       </a>
       <button id="theme-toggle" class="header-btn" title="Toggle theme">
         <svg id="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
@@ -290,7 +286,7 @@
     <span class="sep">&middot;</span>
     <a href="https://www.anthropic.com/" target="_blank" rel="noopener">Claude</a>
     <span class="sep">&middot;</span>
-    <a href="https://render.com/" target="_blank" rel="noopener">Render</a>
+    <a id="render-link" href="" target="_blank" rel="noopener">Render</a>
     <span class="sep">&middot;</span>
     <a id="github-link" href="" target="_blank" rel="noopener">GitHub</a>
   </footer>
@@ -325,8 +321,8 @@
       return `https://render.com/register?${params.toString()}`;
     }
 
-    document.getElementById("signup-btn").href = renderSignupUrlWithUtms("navbar_button");
     document.getElementById("deploy-btn").href = `https://render.com/deploy?repo=${encodeURIComponent(GITHUB_REPO)}`;
+    document.getElementById("render-link").href = renderSignupUrlWithUtms("footer_link");
     document.getElementById("github-link").href = GITHUB_REPO;
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
     updateThemeIcons(document.documentElement.classList.contains("dark") ? "dark" : "light");
