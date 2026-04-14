@@ -142,7 +142,7 @@ The web service discovers the workflow by its slug automatically.
 ├── pipeline/
 │   ├── __init__.py          # Exports run_pipeline
 │   ├── orchestrator.py      # Dispatches workflow tasks, polls, streams SSE
-│   ├── history.py           # PostgreSQL research history (optional)
+│   ├── history.py           # PostgreSQL threaded history (optional)
 │   ├── tracking.py          # LangSmith pipeline run lifecycle (optional)
 │   └── feedback.py          # POST /feedback: LangSmith user ratings (optional)
 ├── tasks/
@@ -155,7 +155,7 @@ The web service discovers the workflow by its slug automatically.
 │   ├── plan.py              # plan_research task
 │   └── synthesize.py        # synthesize task
 ├── static/
-│   └── index.html           # UI (activity feed + report, light/dark mode)
+│   └── index.html           # UI (threaded Q&A, activity feed, light/dark mode)
 ├── render.yaml              # Render Blueprint (web service)
 ├── requirements.txt
 └── .env.example
@@ -172,6 +172,11 @@ Starts the research workflow. Returns a Server-Sent Events stream.
 **Request:**
 ```json
 { "question": "What are the latest advances in quantum computing?" }
+```
+
+For follow-up queries within a thread:
+```json
+{ "question": "What about the cost challenges?", "thread_id": "uuid-from-done-event" }
 ```
 
 **SSE events:**
@@ -192,7 +197,7 @@ event: status
 data: {"phase": "synthesizing", "tools": ["Render Workflows", "LangChain", "Claude"]}
 
 event: done
-data: {"report": {...}, "run_id": "...", "elapsed": 68, "tools": [...]}
+data: {"report": {...}, "run_id": "...", "thread_id": "...", "elapsed": 68, "tools": [...]}
 ```
 
 ### `POST /feedback`
@@ -205,15 +210,15 @@ Submits a thumbs up/down rating to LangSmith. No-ops if LangSmith is not configu
 
 ### `GET /history`
 
-Returns recent research history entries (newest first). Returns `[]` if no database is configured.
+Returns recent threads (newest first). Returns `[]` if no database is configured.
 
 ### `GET /history/:id`
 
-Returns a single history entry with the full report.
+Returns a thread with all its research entries.
 
 ### `DELETE /history/:id`
 
-Deletes a history entry.
+Deletes a thread and all its entries.
 
 ### `GET /health`
 
@@ -223,11 +228,13 @@ Returns `{ "status": "ok" }`.
 
 ## History (Optional)
 
-Set `DATABASE_URL` on the web service to enable a sidebar with research history, similar to ChatGPT/Claude.
+Set `DATABASE_URL` on the web service to enable threaded research history with follow-up queries.
 
 1. Create a **PostgreSQL** database on the [Render Dashboard](https://dashboard.render.com)
 2. Copy the **Internal URL** and set it as `DATABASE_URL` on the web service
-3. The table is auto-created on first startup
+3. Tables are auto-created on first startup
+
+Each research creates a thread. Follow-up queries within the same thread pass the previous report's title and section headings (~50 tokens) as context, so Claude plans subtopics that go deeper instead of repeating.
 
 To disable: unset `DATABASE_URL`. The sidebar shows "No history yet" and all history functions no-op.
 

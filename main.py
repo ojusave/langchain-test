@@ -5,7 +5,7 @@ This file is intentionally thin. It handles:
   - CORS middleware (so the browser UI can call the API)
   - The /research POST endpoint (delegates to the pipeline orchestrator)
   - The /feedback POST endpoint (LangSmith user ratings)
-  - The /history endpoints (optional PostgreSQL research history)
+  - The /history endpoints (optional PostgreSQL threaded history)
   - The /health GET endpoint (for Render health checks)
   - Static file serving (the browser UI)
 
@@ -16,6 +16,7 @@ workflow service.
 """
 
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,7 +26,11 @@ from pydantic import BaseModel
 
 from pipeline import run_pipeline
 from pipeline.feedback import router as feedback_router
-from pipeline.history import init_db, close_db, list_history, get_history_entry, delete_history_entry
+from pipeline.history import (
+    init_db, close_db,
+    create_thread, list_threads, get_thread, delete_thread,
+    get_prior_context,
+)
 
 
 @asynccontextmanager
@@ -48,30 +53,41 @@ app.add_middleware(
 
 class ResearchRequest(BaseModel):
     question: str
+    thread_id: Optional[str] = None
 
 
 @app.post("/research")
 async def research(req: ResearchRequest):
-    return StreamingResponse(run_pipeline(req.question), media_type="text/event-stream")
+    prior_context = None
+    thread_id = req.thread_id
+
+    if not thread_id:
+        thread_id = await create_thread(req.question)
+    else:
+        prior_context = await get_prior_context(thread_id)
+
+    return StreamingResponse(
+        run_pipeline(req.question, thread_id=thread_id, prior_context=prior_context),
+        media_type="text/event-stream",
+    )
 
 
 @app.get("/history")
 async def history():
-    entries = await list_history()
-    return entries
+    return await list_threads()
 
 
-@app.get("/history/{entry_id}")
-async def history_entry(entry_id: str):
-    entry = await get_history_entry(entry_id)
-    if not entry:
+@app.get("/history/{thread_id}")
+async def history_entry(thread_id: str):
+    thread = await get_thread(thread_id)
+    if not thread:
         return JSONResponse({"error": "not found"}, status_code=404)
-    return entry
+    return thread
 
 
-@app.delete("/history/{entry_id}")
-async def history_delete(entry_id: str):
-    deleted = await delete_history_entry(entry_id)
+@app.delete("/history/{thread_id}")
+async def history_delete(thread_id: str):
+    deleted = await delete_thread(thread_id)
     if not deleted:
         return JSONResponse({"error": "not found"}, status_code=404)
     return {"status": "ok"}

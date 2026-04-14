@@ -26,7 +26,9 @@ app = Workflows()
     timeout_seconds=90,
     retry=Retry(max_retries=1, wait_duration_ms=3000, backoff_scaling=1),
 )
-def synthesize(question: str, findings: list) -> dict:
+def synthesize(
+    question: str, findings: list, prior_context: str | None = None
+) -> dict:
     """Merge all research agent findings into a structured report."""
     parts = []
     for f in findings:
@@ -42,16 +44,26 @@ def synthesize(question: str, findings: list) -> dict:
         parts.append(section)
 
     context = "\n\n---\n\n".join(parts)
+
+    system = (
+        "You are a research synthesizer. Combine the research findings below into "
+        "a structured report. Return ONLY a JSON object with:\n"
+        '- "title": a concise report title\n'
+        '- "summary": a 2-3 sentence executive summary\n'
+        '- "sections": a list of objects with "heading" and "content" keys (use markdown in content)\n'
+        '- "sources": a deduplicated list of objects with "title" and "url" keys\n'
+        "No other text."
+    )
+
+    if prior_context:
+        system += (
+            "\n\nThis is a follow-up to earlier research. Build on what was already covered "
+            "rather than repeating it. Reference the prior research where relevant.\n"
+            f"{prior_context}"
+        )
+
     raw = ask(
-        system=(
-            "You are a research synthesizer. Combine the research findings below into "
-            "a structured report. Return ONLY a JSON object with:\n"
-            '- "title": a concise report title\n'
-            '- "summary": a 2-3 sentence executive summary\n'
-            '- "sections": a list of objects with "heading" and "content" keys (use markdown in content)\n'
-            '- "sources": a deduplicated list of objects with "title" and "url" keys\n'
-            "No other text."
-        ),
+        system=system,
         user=f"Research question: {question}\n\nResearch findings:\n{context}",
     )
     return parse_json(raw, {

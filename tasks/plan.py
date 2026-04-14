@@ -23,23 +23,29 @@ app = Workflows()
     timeout_seconds=45,
     retry=Retry(max_retries=2, wait_duration_ms=2000, backoff_scaling=1.5),
 )
-def plan_research(question: str) -> dict:
+def plan_research(question: str, prior_context: str | None = None) -> dict:
     """Break a research question into subtopics with success criteria."""
-    raw = ask(
-        system=(
-            "You are a research planner. Given a question, break it into subtopics "
-            "that a research agent should investigate separately. Use as many subtopics "
-            "as the question needs: simple questions may only need one or two, broad or "
-            "multi-faceted questions may need several. Keep subtopics focused and "
-            "non-overlapping. For each, define a concise success criterion.\n\n"
-            "Return ONLY a JSON object with:\n"
-            '- "subtopics": a list of objects, each with:\n'
-            '  - "topic": a concise subtopic description\n'
-            '  - "criteria": what evidence the researcher should find (2-3 sources)\n'
-            "No other text."
-        ),
-        user=question,
+    system = (
+        "You are a research planner. Given a question, break it into subtopics "
+        "that a research agent should investigate separately. Use as many subtopics "
+        "as the question needs: simple questions may only need one or two, broad or "
+        "multi-faceted questions may need several. Keep subtopics focused and "
+        "non-overlapping. For each, define a concise success criterion.\n\n"
+        "Return ONLY a JSON object with:\n"
+        '- "subtopics": a list of objects, each with:\n'
+        '  - "topic": a concise subtopic description\n'
+        '  - "criteria": what evidence the researcher should find (2-3 sources)\n'
+        "No other text."
     )
+
+    if prior_context:
+        system += (
+            "\n\nThis is a follow-up query. The user already researched a related topic. "
+            "Plan subtopics that go deeper or cover new ground, avoiding what was already covered.\n"
+            f"{prior_context}"
+        )
+
+    raw = ask(system=system, user=question)
     fallback = {
         "subtopics": [
             {"topic": question, "criteria": "Find 3-5 relevant, recent sources with key findings."}

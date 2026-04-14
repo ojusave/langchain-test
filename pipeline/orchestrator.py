@@ -18,7 +18,7 @@ import time
 
 from render_sdk import RenderAsync
 from .tracking import start_run, complete_run, fail_run
-from .history import save_research
+from .history import save_entry
 
 WORKFLOW_SLUG = os.environ.get("WORKFLOW_SLUG", "research-agent-workflow")
 POLL_INTERVAL = 4
@@ -89,7 +89,11 @@ async def _start_and_wait(task_path: str, params: dict) -> dict:
 # Pipeline
 # ---------------------------------------------------------------------------
 
-async def run_pipeline(question: str):
+async def run_pipeline(
+    question: str,
+    thread_id: str | None = None,
+    prior_context: str | None = None,
+):
     """Run the full research pipeline, yielding SSE events at each step."""
     run_id = None
     t0 = time.monotonic()
@@ -103,7 +107,11 @@ async def run_pipeline(question: str):
             "tools": _tools("Render Workflows", "LangChain", "Claude"),
         })
 
-        plan = await _start_and_wait("plan_research", {"question": question})
+        plan_params = {"question": question}
+        if prior_context:
+            plan_params["prior_context"] = prior_context
+
+        plan = await _start_and_wait("plan_research", plan_params)
         subtopics = plan.get("subtopics", [
             {"topic": question, "criteria": "Find relevant sources."}
         ])
@@ -160,19 +168,21 @@ async def run_pipeline(question: str):
             "tools": _tools("Render Workflows", "LangChain", "Claude"),
         })
 
-        report = await _start_and_wait("synthesize", {
-            "question": question,
-            "findings": findings,
-        })
+        synth_params = {"question": question, "findings": findings}
+        if prior_context:
+            synth_params["prior_context"] = prior_context
+
+        report = await _start_and_wait("synthesize", synth_params)
 
         elapsed = int(time.monotonic() - t0)
 
         if report:
             complete_run(run_id, report)
-            await save_research(question, report, run_id)
+            await save_entry(thread_id, question, report, run_id)
             yield sse("done", {
                 "report": report,
                 "run_id": run_id,
+                "thread_id": thread_id,
                 "elapsed": elapsed,
                 "tools": _tools("Render Workflows", "LangChain", "Claude"),
             })
