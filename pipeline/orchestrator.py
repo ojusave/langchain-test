@@ -1,15 +1,14 @@
 """
-Pipeline orchestrator: starts the research workflow task and streams SSE.
+Pipeline orchestrator: runs plan, research agents, and synthesize as
+individual workflow tasks, streaming real-time progress via SSE.
 
-This is the bridge between the stateless web service and the durable
-workflow service. It:
-  1. Triggers the `research` orchestrator task via the Render SDK
-  2. Polls for completion, streaming live progress as SSE
-  3. Extracts the final report and sends it to the frontend
+The web service calls run_pipeline(), which:
+  1. Starts plan_research → polls → extracts subtopics
+  2. Starts N research_subtopic tasks in parallel → polls each → reports completions
+  3. Starts synthesize → polls → extracts report
 
-The orchestrator itself does no research work. All compute happens in
-the workflow service on isolated instances with their own retry/timeout
-config.
+Each task runs on the workflow service with its own retry/timeout config.
+The orchestrator only dispatches and polls: no research logic here.
 """
 
 import asyncio
@@ -18,23 +17,24 @@ import os
 import time
 
 from render_sdk import RenderAsync
-from render_sdk.client.errors import TaskRunError
-
 from .tracking import start_run, complete_run, fail_run
 
 WORKFLOW_SLUG = os.environ.get("WORKFLOW_SLUG", "research-agent-workflow")
-POLL_INTERVAL = 4  # seconds between status checks
+POLL_INTERVAL = 4
 
 render = RenderAsync()
 
-# Pipeline phases shown in order as time progresses.
-# (min_elapsed_seconds, label)
-_PHASES = [
-    (0, "Planning research approach…"),
-    (10, "Searching for sources…"),
-    (25, "Analyzing findings…"),
-    (50, "Synthesizing final report…"),
-]
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _tools(*names):
+    """Build a tools list, appending LangSmith when configured."""
+    tools = list(names)
+    if os.environ.get("LANGCHAIN_API_KEY"):
+        tools.append("LangSmith")
+    return tools
 
 
 def _to_dict(obj):
@@ -52,8 +52,8 @@ def sse(event: str, data: dict) -> str:
     return f"event: {event}\ndata: {json.dumps(data, default=str)}\n\n"
 
 
-def _extract_report(results) -> dict:
-    """Pull the report dict out of whatever shape the SDK gives us for results."""
+def _extract_result(results):
+    """Pull the result dict out of whatever shape the SDK gives us."""
     if not results:
         return {}
     raw = results
@@ -64,73 +64,122 @@ def _extract_report(results) -> dict:
     return _to_dict(raw) if raw is not None else {}
 
 
-def _phase_message(elapsed: int) -> str:
-    msg = _PHASES[0][1]
-    for threshold, label in _PHASES:
-        if elapsed >= threshold:
-            msg = label
-    return msg
+def _task_status(details) -> str:
+    return details.status if isinstance(details.status, str) else details.status.value
 
+
+async def _start_and_wait(task_path: str, params: dict) -> dict:
+    """Start a workflow task, poll until terminal, return the result dict."""
+    started = await render.workflows.start_task(
+        f"{WORKFLOW_SLUG}/{task_path}", params
+    )
+    while True:
+        await asyncio.sleep(POLL_INTERVAL)
+        details = await render.workflows.get_task_run(started.id)
+        status = _task_status(details)
+        if status == "completed":
+            return _extract_result(details.results)
+        if status in ("failed", "canceled"):
+            error = getattr(details, "error", "unknown error")
+            raise RuntimeError(f"Task {task_path} {status}: {error}")
+
+
+# ---------------------------------------------------------------------------
+# Pipeline
+# ---------------------------------------------------------------------------
 
 async def run_pipeline(question: str):
-    """Start the research task and poll for completion, streaming progress."""
+    """Run the full research pipeline, yielding SSE events at each step."""
     run_id = None
+    t0 = time.monotonic()
+
     try:
         run_id = start_run(question)
 
-        started = await render.workflows.start_task(
-            f"{WORKFLOW_SLUG}/research", {"question": question}
-        )
-        task_run_id = started.id
-        t0 = time.monotonic()
-
+        # Phase 1: plan
         yield sse("status", {
-            "message": _phase_message(0),
-            "task_run_id": task_run_id,
-            "elapsed": 0,
+            "phase": "planning",
+            "tools": _tools("Render Workflows", "LangChain", "Claude"),
         })
 
-        # Poll until the task reaches a terminal state
-        while True:
-            await asyncio.sleep(POLL_INTERVAL)
-            elapsed = int(time.monotonic() - t0)
+        plan = await _start_and_wait("plan_research", {"question": question})
+        subtopics = plan.get("subtopics", [
+            {"topic": question, "criteria": "Find relevant sources."}
+        ])
 
-            details = await render.workflows.get_task_run(task_run_id)
-            status_val = details.status if isinstance(details.status, str) else details.status.value
+        yield sse("plan", {
+            "subtopics": [st["topic"] for st in subtopics],
+            "tools": _tools("Render Workflows", "LangChain", "Claude"),
+        })
 
-            if status_val in ("completed", "failed", "canceled"):
-                break
-
-            yield sse("status", {
-                "message": _phase_message(elapsed),
-                "elapsed": elapsed,
+        # Phase 2: parallel research agents
+        agents = []
+        for i, st in enumerate(subtopics):
+            started = await render.workflows.start_task(
+                f"{WORKFLOW_SLUG}/research_subtopic",
+                {"subtopic": st["topic"], "criteria": st["criteria"]},
+            )
+            agents.append({
+                "id": started.id,
+                "index": i,
+                "subtopic": st["topic"],
+                "done": False,
             })
+            yield sse("agent_start", {
+                "index": i,
+                "subtopic": st["topic"],
+                "tools": _tools("Render Workflows", "LangGraph", "Exa", "Claude"),
+            })
+
+        findings = [None] * len(agents)
+
+        while not all(a["done"] for a in agents):
+            await asyncio.sleep(POLL_INTERVAL)
+            for a in agents:
+                if a["done"]:
+                    continue
+                details = await render.workflows.get_task_run(a["id"])
+                status = _task_status(details)
+
+                if status == "completed":
+                    a["done"] = True
+                    findings[a["index"]] = _extract_result(details.results)
+                    yield sse("agent_done", {
+                        "index": a["index"],
+                        "subtopic": a["subtopic"],
+                        "tools": _tools("Render Workflows", "LangGraph", "Exa", "Claude"),
+                    })
+                elif status in ("failed", "canceled"):
+                    error = getattr(details, "error", "unknown error")
+                    raise RuntimeError(f"Agent '{a['subtopic']}' {status}: {error}")
+
+        # Phase 3: synthesize
+        yield sse("status", {
+            "phase": "synthesizing",
+            "tools": _tools("Render Workflows", "LangChain", "Claude"),
+        })
+
+        report = await _start_and_wait("synthesize", {
+            "question": question,
+            "findings": findings,
+        })
 
         elapsed = int(time.monotonic() - t0)
 
-        if status_val == "completed":
-            report = _extract_report(details.results)
-
-            if report:
-                complete_run(run_id, report)
-                yield sse("done", {"report": report, "run_id": run_id, "elapsed": elapsed})
-            else:
-                yield sse("error", {
-                    "message": "Workflow completed but returned empty results. Check workflow logs.",
-                    "elapsed": elapsed,
-                })
-        elif status_val == "failed":
-            err = getattr(details, "error", None) or "Task failed"
-            fail_run(run_id, str(err))
-            yield sse("error", {"message": str(err), "elapsed": elapsed})
+        if report:
+            complete_run(run_id, report)
+            yield sse("done", {
+                "report": report,
+                "run_id": run_id,
+                "elapsed": elapsed,
+                "tools": _tools("Render Workflows", "LangChain", "Claude"),
+            })
         else:
-            fail_run(run_id, f"Task was {status_val}")
-            yield sse("error", {"message": f"Task was {status_val}", "elapsed": elapsed})
-
-    except TaskRunError as e:
-        fail_run(run_id, str(e))
-        yield sse("error", {"message": str(e)})
+            yield sse("error", {
+                "message": "Pipeline completed but returned empty results.",
+            })
 
     except Exception as e:
         fail_run(run_id, str(e))
-        yield sse("error", {"message": str(e)})
+        elapsed = int(time.monotonic() - t0)
+        yield sse("error", {"message": str(e), "elapsed": elapsed})

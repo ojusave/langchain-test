@@ -32,7 +32,7 @@ Ask a question. The agent:
 2. **Researches**: 3 LangGraph agents run in parallel, each using Exa semantic search. Claude decides the search strategy at runtime: how many searches, when to refine, when to stop.
 3. **Synthesizes**: Claude merges all findings into a structured report with sections and sources.
 
-The UI streams live progress with a step indicator and elapsed timer.
+The UI streams live progress as an activity feed, showing which tool is doing what at each step.
 
 ```
 User question
@@ -139,24 +139,23 @@ The web service discovers the workflow by its slug automatically.
 ## Project Structure
 
 ```
-├── main.py                  # FastAPI web service (thin HTTP layer)
-├── feedback.py              # POST /feedback (LangSmith user ratings)
+├── main.py                  # FastAPI web service (HTTP + CORS + static files)
 ├── pipeline/
 │   ├── __init__.py          # Exports run_pipeline
-│   ├── orchestrator.py      # Starts workflow, polls, streams SSE
-│   └── tracking.py          # LangSmith pipeline run lifecycle
+│   ├── orchestrator.py      # Dispatches workflow tasks, polls, streams SSE
+│   ├── tracking.py          # LangSmith pipeline run lifecycle (optional)
+│   └── feedback.py          # POST /feedback: LangSmith user ratings (optional)
 ├── tasks/
-│   ├── __init__.py          # Combines task apps
+│   ├── __init__.py          # Combines task apps for the workflow service
 │   ├── __main__.py          # Workflow entry point (python -m tasks)
 │   ├── llm.py               # Shared ChatAnthropic model + helpers
 │   ├── tools.py             # Exa tools for LangGraph
 │   ├── agent.py             # LangGraph ReAct agent
 │   ├── research_agent.py    # Workflow task wrapping the agent
 │   ├── plan.py              # plan_research task
-│   ├── synthesize.py        # synthesize task
-│   └── research.py          # Orchestrator: plan → agents → synthesize
+│   └── synthesize.py        # synthesize task
 ├── static/
-│   └── index.html           # UI (light/dark mode)
+│   └── index.html           # UI (activity feed + report, light/dark mode)
 ├── render.yaml              # Render Blueprint (web service)
 ├── requirements.txt
 └── .env.example
@@ -178,13 +177,22 @@ Starts the research workflow. Returns a Server-Sent Events stream.
 **SSE events:**
 ```
 event: status
-data: {"message": "Planning research approach…", "elapsed": 0}
+data: {"phase": "planning", "tools": ["Render Workflows", "LangChain", "Claude"]}
+
+event: plan
+data: {"subtopics": ["quantum hardware", "error correction", "quantum software"], "tools": [...]}
+
+event: agent_start
+data: {"index": 0, "subtopic": "quantum hardware", "tools": ["Render Workflows", "LangGraph", "Exa", "Claude"]}
+
+event: agent_done
+data: {"index": 0, "subtopic": "quantum hardware", "tools": [...]}
 
 event: status
-data: {"message": "Searching for sources…", "elapsed": 12}
+data: {"phase": "synthesizing", "tools": ["Render Workflows", "LangChain", "Claude"]}
 
 event: done
-data: {"report": {...}, "run_id": "...", "elapsed": 68}
+data: {"report": {...}, "run_id": "...", "elapsed": 68, "tools": [...]}
 ```
 
 ### `POST /feedback`
@@ -211,7 +219,7 @@ Set `LANGCHAIN_API_KEY` on both services to enable:
 
 To disable: unset `LANGCHAIN_API_KEY`. Everything gracefully no-ops.
 
-To remove entirely: delete `feedback.py`, `pipeline/tracking.py`, and the `include_router` line in `main.py`.
+To remove entirely: delete `pipeline/feedback.py`, `pipeline/tracking.py`, and the related import lines in `main.py` and `pipeline/orchestrator.py`.
 
 ---
 

@@ -64,6 +64,7 @@
     a { color: var(--render-purple); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
+    /* --- Header --- */
     header {
       padding: 0.625rem 1.25rem;
       border-bottom: 1px solid var(--border);
@@ -112,6 +113,7 @@
     .header-btn.primary:hover { background: var(--render-purple-hover); }
     .header-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
 
+    /* --- Main content --- */
     #main {
       flex: 1;
       overflow-y: auto;
@@ -121,6 +123,7 @@
       align-items: center;
     }
 
+    /* --- Welcome --- */
     .welcome {
       text-align: center;
       color: var(--text-dim);
@@ -145,106 +148,153 @@
       border-color: var(--overlay-strong); color: var(--text);
     }
 
-    /* Loading state */
-    #loading {
+    /* --- Activity feed --- */
+    #activity {
       display: none;
-      text-align: center;
-      margin: auto;
-      padding: 2.5rem 2rem;
-      max-width: 480px;
+      width: 100%;
+      max-width: 720px;
     }
 
-    .loader {
-      width: 48px; height: 48px;
-      margin: 0 auto 1.5rem;
-      border: 3px solid var(--border);
-      border-top-color: var(--render-purple);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    #loading h2 {
-      font-size: 1rem;
-      color: var(--text-muted);
-      margin-bottom: 0.25rem;
-      font-family: 'Inter', sans-serif;
+    .activity-question {
+      font-size: 1.1rem;
+      color: var(--text-strong);
       font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
     }
 
-    #elapsed-timer {
+    .activity-timer {
       font-size: 0.7rem;
       color: var(--text-dim);
       font-variant-numeric: tabular-nums;
-      margin-bottom: 1.25rem;
+      float: right;
+      margin-top: 0.2rem;
     }
 
-    .phase-steps {
+    .activity-feed {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      text-align: left;
-      margin-bottom: 1.25rem;
+      gap: 0;
     }
 
-    .phase-step {
+    .activity-item {
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      transition: color 0.2s;
+      align-items: flex-start;
+      gap: 0.625rem;
+      padding: 0.5rem 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      animation: fadeUp 0.3s ease-out;
+      border-left: 2px solid var(--border);
+      padding-left: 0.875rem;
+      margin-left: 3px;
     }
 
-    .phase-step.active { color: var(--text); }
-    .phase-step.done { color: var(--green); }
+    .activity-item:last-child {
+      border-left-color: transparent;
+    }
 
-    .phase-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      border: 1.5px solid var(--text-dim);
+    .activity-item .indicator {
+      width: 10px; height: 10px;
       flex-shrink: 0;
-      transition: all 0.2s;
+      margin-top: 0.2rem;
+      margin-left: -1.45rem;
+      border-radius: 50%;
+      background: var(--border);
+      position: relative;
     }
 
-    .phase-step.active .phase-dot {
-      border-color: var(--render-purple);
+    .activity-item.active .indicator {
       background: var(--render-purple);
-      box-shadow: 0 0 6px rgba(108,99,255,0.5);
+      box-shadow: 0 0 8px rgba(108,99,255,0.5);
+      animation: pulse 1.5s ease-in-out infinite;
     }
 
-    .phase-step.done .phase-dot {
-      border-color: var(--green);
+    .activity-item.done .indicator {
       background: var(--green);
     }
 
-    #loading .dashboard-link {
+    .activity-item.error .indicator {
+      background: var(--red);
+    }
+
+    .activity-item .label {
+      flex: 1;
+      line-height: 1.5;
+    }
+
+    .activity-item .label strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .activity-item.done .label {
+      color: var(--text-dim);
+    }
+
+    .activity-item.active .label {
+      color: var(--text);
+    }
+
+    .activity-item .elapsed {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .subtopic-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.375rem;
+      margin-top: 0.375rem;
+    }
+
+    .subtopic-tag {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      background: var(--overlay-subtle);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .agent-row {
+      margin-left: 0.25rem;
+    }
+
+
+    .activity-error {
+      color: var(--red);
+      font-size: 0.8rem;
+      margin-top: 0.75rem;
+    }
+
+    .dashboard-link {
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 500;
       color: var(--render-purple);
-      padding: 0.4rem 0.75rem;
+      padding: 0.3rem 0.6rem;
       border: 1px solid rgba(108,99,255,0.25);
       background: rgba(108,99,255,0.06);
       transition: all 0.15s;
+      margin-top: 0.75rem;
     }
 
-    #loading .dashboard-link:hover {
+    .dashboard-link:hover {
       background: rgba(108,99,255,0.12);
       border-color: rgba(108,99,255,0.4);
       text-decoration: none;
     }
 
-    #loading .dashboard-link svg { width: 13px; height: 13px; }
+    .dashboard-link svg { width: 12px; height: 12px; }
 
-    #loading .error-msg {
-      color: var(--red);
-      font-size: 0.8rem;
-      margin-top: 1rem;
-    }
-
-    /* Report */
+    /* --- Report --- */
     #report {
       display: none;
       width: 100%;
@@ -252,6 +302,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       padding: 2rem;
+      margin-top: 1.5rem;
       animation: fadeUp 0.3s ease-out;
     }
 
@@ -343,6 +394,7 @@
       white-space: nowrap;
     }
 
+    /* --- Feedback --- */
     .feedback-bar {
       margin-top: 1.5rem;
       padding-top: 1rem;
@@ -352,10 +404,7 @@
       gap: 0.75rem;
     }
 
-    .feedback-bar span {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-    }
+    .feedback-bar span { font-size: 0.75rem; color: var(--text-dim); }
 
     .feedback-btn {
       width: 32px; height: 32px;
@@ -379,6 +428,7 @@
       animation: fadeUp 0.2s ease-out;
     }
 
+    /* --- Form --- */
     form {
       padding: 0.75rem 1rem 1rem;
       border-top: 1px solid var(--border);
@@ -415,6 +465,7 @@
     button[type="submit"]:disabled { opacity: 0.4; cursor: not-allowed; }
     button[type="submit"] svg { width: 14px; height: 14px; }
 
+    /* --- Footer --- */
     footer {
       padding: 0.5rem 1.25rem;
       border-top: 1px solid var(--border);
@@ -425,19 +476,22 @@
     footer a:hover { color: var(--text); }
     footer .sep { color: var(--sep); }
 
+    /* --- Scrollbar --- */
     #main::-webkit-scrollbar { width: 4px; }
     #main::-webkit-scrollbar-thumb { background: var(--overlay-strong); }
-    #main::-webkit-scrollbar-thumb:hover { background: var(--overlay-strong); }
 
+    /* --- Animations --- */
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(108,99,255,0.3); }
+      50% { box-shadow: 0 0 10px rgba(108,99,255,0.6); }
     }
 
+    /* --- Mobile --- */
     @media (max-width: 600px) {
       #main { padding: 1.5rem 0.75rem; }
       form { padding: 0.625rem 0.75rem 0.875rem; }
@@ -446,6 +500,7 @@
       .header-btn { font-size: 0.65rem; padding: 0.25rem 0.5rem; }
       .header-btn .btn-label { display: none; }
       #report { padding: 1.25rem; }
+      .activity-question { font-size: 0.95rem; }
     }
   </style>
 </head>
@@ -481,33 +536,21 @@
       <div class="examples">
         <button type="button" onclick="sendExample(this)">What are the latest advances in quantum computing?</button>
         <button type="button" onclick="sendExample(this)">How does mRNA vaccine technology work?</button>
-        <button type="button" onclick="sendExample(this)">What is the state of fusion energy in 2025?</button>
+        <button type="button" onclick="sendExample(this)">What is the state of fusion energy in 2026?</button>
       </div>
     </div>
 
-    <div id="loading">
-      <div class="loader"></div>
-      <h2 id="loading-msg">Starting research…</h2>
-      <div id="elapsed-timer">0:00</div>
-      <div class="phase-steps" id="phase-steps">
-        <div class="phase-step" data-phase="plan">
-          <span class="phase-dot"></span><span>Planning research approach</span>
-        </div>
-        <div class="phase-step" data-phase="search">
-          <span class="phase-dot"></span><span>Searching for sources</span>
-        </div>
-        <div class="phase-step" data-phase="analyze">
-          <span class="phase-dot"></span><span>Analyzing findings</span>
-        </div>
-        <div class="phase-step" data-phase="synthesize">
-          <span class="phase-dot"></span><span>Synthesizing report</span>
-        </div>
+    <div id="activity">
+      <div class="activity-question">
+        <span class="activity-timer" id="activity-timer">0:00</span>
+        <span id="activity-question-text"></span>
       </div>
+      <div class="activity-feed" id="activity-feed"></div>
       <a href="https://dashboard.render.com/" target="_blank" rel="noopener" class="dashboard-link">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        Watch the task tree in the Render Dashboard
+        Watch tasks in the Render Dashboard
       </a>
-      <div class="error-msg" id="error-msg"></div>
+      <div class="activity-error" id="activity-error"></div>
     </div>
 
     <div id="report"></div>
@@ -522,21 +565,20 @@
   </form>
 
   <footer>
-    <span>Built with LangChain + Claude + Exa</span>
+    <span>Built with</span>
+    <a href="https://www.langchain.com/langgraph" target="_blank" rel="noopener">LangGraph</a>
     <span class="sep">&middot;</span>
-    <a href="https://render.com/" target="_blank" rel="noopener">Powered by Render</a>
+    <a href="https://exa.ai/" target="_blank" rel="noopener">Exa</a>
     <span class="sep">&middot;</span>
-    <a id="source-link" href="" target="_blank" rel="noopener">Source</a>
+    <a href="https://www.anthropic.com/" target="_blank" rel="noopener">Claude</a>
+    <span class="sep">&middot;</span>
+    <a href="https://render.com/" target="_blank" rel="noopener">Render</a>
   </footer>
 
   <script>
-    (function initTheme() {
-      const saved = localStorage.getItem("theme");
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      const theme = saved || (prefersDark ? "dark" : "light");
-      document.documentElement.className = theme;
-    })();
-
+    // -----------------------------------------------------------------------
+    // Theme
+    // -----------------------------------------------------------------------
     function toggleTheme() {
       const html = document.documentElement;
       const next = html.classList.contains("dark") ? "light" : "dark";
@@ -550,6 +592,9 @@
       document.getElementById("icon-moon").style.display = theme === "dark" ? "block" : "none";
     }
 
+    // -----------------------------------------------------------------------
+    // Config + link setup
+    // -----------------------------------------------------------------------
     const GITHUB_REPO = "https://github.com/ojusave/langchain-test";
 
     function renderSignupUrlWithUtms(content = "footer_link") {
@@ -565,56 +610,43 @@
     document.getElementById("signup-btn").href = renderSignupUrlWithUtms("navbar_button");
     document.getElementById("deploy-btn").href = `https://render.com/deploy?repo=${encodeURIComponent(GITHUB_REPO)}`;
     document.getElementById("github-btn").href = GITHUB_REPO;
-    document.getElementById("source-link").href = GITHUB_REPO;
     document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
     updateThemeIcons(document.documentElement.classList.contains("dark") ? "dark" : "light");
 
+    // -----------------------------------------------------------------------
+    // DOM refs
+    // -----------------------------------------------------------------------
     const form = document.getElementById("form");
-    const input = document.getElementById("input");
+    const inputEl = document.getElementById("input");
     const mainEl = document.getElementById("main");
     const welcome = document.getElementById("welcome");
-    const loading = document.getElementById("loading");
-    const loadingMsg = document.getElementById("loading-msg");
-    const elapsedTimer = document.getElementById("elapsed-timer");
-    const errorMsg = document.getElementById("error-msg");
-    const report = document.getElementById("report");
+    const activity = document.getElementById("activity");
+    const activityFeed = document.getElementById("activity-feed");
+    const activityTimer = document.getElementById("activity-timer");
+    const activityQuestionText = document.getElementById("activity-question-text");
+    const activityError = document.getElementById("activity-error");
+    const reportEl = document.getElementById("report");
 
     let timerInterval = null;
     let startTime = 0;
     let currentRunId = null;
 
-    const PHASE_THRESHOLDS = [
-      { key: "plan", at: 0 },
-      { key: "search", at: 10 },
-      { key: "analyze", at: 25 },
-      { key: "synthesize", at: 50 },
-    ];
-
+    // -----------------------------------------------------------------------
+    // Timer
+    // -----------------------------------------------------------------------
     function formatElapsed(sec) {
       const m = Math.floor(sec / 60);
       const s = sec % 60;
       return `${m}:${String(s).padStart(2, "0")}`;
     }
 
-    function updatePhaseSteps(elapsed) {
-      const steps = document.querySelectorAll(".phase-step");
-      let activeIdx = 0;
-      for (let i = 0; i < PHASE_THRESHOLDS.length; i++) {
-        if (elapsed >= PHASE_THRESHOLDS[i].at) activeIdx = i;
-      }
-      steps.forEach((step, i) => {
-        step.classList.remove("active", "done");
-        if (i < activeIdx) step.classList.add("done");
-        else if (i === activeIdx) step.classList.add("active");
-      });
-    }
-
     function startTimer() {
       startTime = Date.now();
+      activityTimer.textContent = "0:00";
       timerInterval = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        elapsedTimer.textContent = formatElapsed(elapsed);
-        updatePhaseSteps(elapsed);
+        activityTimer.textContent = formatElapsed(
+          Math.floor((Date.now() - startTime) / 1000)
+        );
       }, 1000);
     }
 
@@ -622,6 +654,126 @@
       if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     }
 
+    // -----------------------------------------------------------------------
+    // Activity feed: append items
+    // -----------------------------------------------------------------------
+    function addActivityItem(label, state) {
+      const item = document.createElement("div");
+      item.className = `activity-item ${state}`;
+      item.innerHTML = `<span class="indicator"></span><span class="label">${label}</span>`;
+      activityFeed.appendChild(item);
+      mainEl.scrollTop = mainEl.scrollHeight;
+      return item;
+    }
+
+    function markItemDone(item) {
+      item.classList.remove("active");
+      item.classList.add("done");
+    }
+
+    function markItemError(item) {
+      item.classList.remove("active");
+      item.classList.add("error");
+    }
+
+    // -----------------------------------------------------------------------
+    // SSE event handlers (one per event type)
+    // -----------------------------------------------------------------------
+    let planningItem = null;
+    let agentItems = {};
+    let synthesizingItem = null;
+
+    function handleStatus(data) {
+      if (data.phase === "planning") {
+        planningItem = addActivityItem(
+          "<strong>Render Workflows</strong> dispatched the plan task: " +
+          "<strong>Claude</strong> is breaking down your question...",
+          "active"
+        );
+      } else if (data.phase === "synthesizing") {
+        synthesizingItem = addActivityItem(
+          "<strong>Claude</strong> is synthesizing the final report...",
+          "active"
+        );
+      }
+    }
+
+    function handlePlan(data) {
+      if (planningItem) markItemDone(planningItem);
+
+      const subtopics = data.subtopics || [];
+      let tagsHtml = '<div class="subtopic-list">';
+      for (const st of subtopics) {
+        tagsHtml += `<span class="subtopic-tag">${escapeHtml(st)}</span>`;
+      }
+      tagsHtml += '</div>';
+
+      addActivityItem(
+        `<strong>Claude</strong> planned ${subtopics.length} subtopics` + tagsHtml,
+        "done"
+      );
+
+      addActivityItem(
+        `<strong>Render Workflows</strong> launched ${subtopics.length} parallel agents`,
+        "done"
+      );
+    }
+
+    function handleAgentStart(data) {
+      const item = addActivityItem(
+        `<strong>LangGraph</strong> agent is using <strong>Exa</strong> to research: ${escapeHtml(data.subtopic)}`,
+        "active"
+      );
+      agentItems[data.index] = { item, startTime: Date.now() };
+    }
+
+    function handleAgentDone(data) {
+      const entry = agentItems[data.index];
+      if (!entry) return;
+
+      markItemDone(entry.item);
+      const elapsed = Math.round((Date.now() - entry.startTime) / 1000);
+      const elapsedSpan = document.createElement("span");
+      elapsedSpan.className = "elapsed";
+      elapsedSpan.textContent = `${elapsed}s`;
+      entry.item.appendChild(elapsedSpan);
+
+      entry.item.querySelector(".label").innerHTML =
+        `<strong>LangGraph</strong> agent finished: ${escapeHtml(data.subtopic)}`;
+    }
+
+    function handleDone(data) {
+      if (synthesizingItem) markItemDone(synthesizingItem);
+      stopTimer();
+      currentRunId = data.run_id || null;
+
+      const langsmithTools = data.tools || [];
+      if (langsmithTools.includes("LangSmith")) {
+        addActivityItem(
+          "<strong>LangSmith</strong> traced all calls in this pipeline",
+          "done"
+        );
+      }
+
+      setTimeout(() => {
+        renderReport(data.report);
+      }, 300);
+    }
+
+    function handleError(data) {
+      stopTimer();
+      if (planningItem) markItemError(planningItem);
+      if (synthesizingItem) markItemError(synthesizingItem);
+      for (const key of Object.keys(agentItems)) {
+        const entry = agentItems[key];
+        if (entry.item.classList.contains("active")) markItemError(entry.item);
+      }
+      activityError.textContent = data.message || "Unknown error";
+    }
+
+    // -----------------------------------------------------------------------
+    // Report renderer
+    // -----------------------------------------------------------------------
     function renderMarkdown(text) {
       let html = text
         .replace(/&/g, "&amp;")
@@ -707,10 +859,14 @@
         html += `</div>`;
       }
 
-      report.innerHTML = html;
-      report.style.display = "block";
+      reportEl.innerHTML = html;
+      reportEl.style.display = "block";
+      mainEl.scrollTop = mainEl.scrollHeight;
     }
 
+    // -----------------------------------------------------------------------
+    // Feedback
+    // -----------------------------------------------------------------------
     async function sendFeedback(score, btn) {
       if (!currentRunId) return;
       const bar = document.getElementById("feedback-bar");
@@ -736,6 +892,9 @@
       bar.appendChild(thanks);
     }
 
+    // -----------------------------------------------------------------------
+    // SSE parser
+    // -----------------------------------------------------------------------
     function parseSSE(text) {
       const events = [];
       const parts = text.split("\n\n");
@@ -754,56 +913,39 @@
       return { events, remainder: remainder || "" };
     }
 
-    function showLoading() {
+    // -----------------------------------------------------------------------
+    // UI state transitions
+    // -----------------------------------------------------------------------
+    function showActivity(question) {
       welcome.style.display = "none";
-      loading.style.display = "block";
-      report.style.display = "none";
-      report.innerHTML = "";
-      loadingMsg.textContent = "Starting research…";
-      elapsedTimer.textContent = "0:00";
-      errorMsg.textContent = "";
-      document.querySelector(".loader").style.display = "";
-      document.querySelectorAll(".phase-step").forEach(s => s.classList.remove("active", "done"));
+      activity.style.display = "block";
+      reportEl.style.display = "none";
+      reportEl.innerHTML = "";
+      activityFeed.innerHTML = "";
+      activityError.textContent = "";
+      activityQuestionText.textContent = question;
+      currentRunId = null;
+      planningItem = null;
+      agentItems = {};
+      synthesizingItem = null;
       startTimer();
     }
 
-    function showError(msg) {
-      stopTimer();
-      loadingMsg.textContent = "Research failed";
-      errorMsg.textContent = msg;
-      document.querySelector(".loader").style.display = "none";
-      document.querySelectorAll(".phase-step.active").forEach(s => {
-        s.classList.remove("active");
-        s.style.color = "var(--red)";
-      });
-    }
-
-    function showReport(data) {
-      stopTimer();
-      document.querySelectorAll(".phase-step").forEach(s => {
-        s.classList.remove("active");
-        s.classList.add("done");
-      });
-      setTimeout(() => {
-        loading.style.display = "none";
-        document.querySelector(".loader").style.display = "";
-        renderReport(data);
-      }, 400);
-    }
-
     function sendExample(btn) {
-      input.value = btn.textContent;
+      inputEl.value = btn.textContent;
       form.dispatchEvent(new Event("submit"));
     }
 
+    // -----------------------------------------------------------------------
+    // Form submit: stream SSE and dispatch to handlers
+    // -----------------------------------------------------------------------
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const text = input.value.trim();
+      const text = inputEl.value.trim();
       if (!text) return;
 
-      input.value = "";
-      currentRunId = null;
-      showLoading();
+      inputEl.value = "";
+      showActivity(text);
 
       const btn = form.querySelector("button[type='submit']");
       btn.disabled = true;
@@ -828,29 +970,23 @@
           buffer = remainder;
 
           for (const { event, data } of events) {
-            if (event === "status") {
-              loadingMsg.textContent = data.message || "Researching…";
-              if (data.elapsed != null) {
-                updatePhaseSteps(data.elapsed);
-              }
-            } else if (event === "done") {
-              currentRunId = data.run_id || null;
-              showReport(data.report);
-            } else if (event === "error") {
-              showError(data.message || "Unknown error");
-            }
+            if (event === "status") handleStatus(data);
+            else if (event === "plan") handlePlan(data);
+            else if (event === "agent_start") handleAgentStart(data);
+            else if (event === "agent_done") handleAgentDone(data);
+            else if (event === "done") handleDone(data);
+            else if (event === "error") handleError(data);
           }
-          mainEl.scrollTop = mainEl.scrollHeight;
         }
       } catch (err) {
-        showError(err.message);
+        handleError({ message: err.message });
       } finally {
         btn.disabled = false;
-        input.focus();
+        inputEl.focus();
       }
     });
 
-    input.focus();
+    inputEl.focus();
   </script>
 </body>
 </html>
