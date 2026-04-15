@@ -24,23 +24,11 @@
 
 ## How It Works
 
-Ask a question. The agent:
+![Architecture](static/images/architecture.png)
 
-1. **Classifies**: Claude determines if the query needs web research or can be answered directly.
-2. **Plans**: Claude breaks research queries into focused subtopics with success criteria (as many as the question needs).
-3. **Researches**: LangGraph agents run in parallel (one per subtopic), each using Exa semantic search. Claude decides the search strategy at runtime: how many searches, when to refine, when to stop.
-4. **Synthesizes**: Claude merges all findings into a structured report with sections and sources.
+![Pipeline flow](static/images/pipeline.png)
 
-Non-research queries (greetings, simple questions, coding help) get a direct reply without triggering Exa searches.
-
-The UI streams live progress as an activity feed, showing which tool is doing what at each step.
-
-```
-User question
-  → classify_query (Claude)
-  ├─ research → plan_research → N× research_subtopic (LangGraph + Exa) → synthesize → report
-  └─ direct → Claude reply (no Exa)
-```
+Non-research queries (greetings, simple questions, coding help) get a direct reply without triggering Exa searches. The UI streams live progress as an activity feed, showing which tool is doing what at each step.
 
 ### What Each Layer Does
 
